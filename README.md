@@ -4,9 +4,11 @@ View the LIST's Format() string split into one line per column. Explain and Help
 
 * Under Source Control it is easier to understand changes to the LIST by viewing FORMAT in Lines
 
-* See all columns as rows to view all pictures at once, maybe change all @n9.2 to have "b"
+* See all columns in rows to view all pictures at once, maybe change all @n9.2 to have "b"
 
-* See all columns as rows to change Modifiers e.g. remove * off multiple fields 
+* See all columns in rows to view or change Modifiers e.g. remove * off multiple fields for no Color
+
+* Duplicate columns or entire groups by copying rows of format
 
 * Invalid Format errors easier to solve with the LIST split
 
@@ -29,3 +31,17 @@ The History shows all the LISTs processed since the program opened. You can go b
 The LIST Help tab documents Modifiers and other Properties.
 
 ![list tab](images/readme5.png)
+
+### Comparison
+
+In Source control comparing a LIST,FORMAT() and #FIELDS() as a multiline block can make it impossible to see the changes. This picture has what are normally left and right stacked viewing the LIST control.
+
+![compare1](images/compare1.png)
+
+Below shows comparing the Format split into lines and it becomes more clean some columns titled Stae and Zip were added plus a new [ Group ].
+
+![compare2](images/compare2.png)
+
+Comparing the Explain Tab that also includes the #Fields() makes it clear State and Zip were moved out of one group and into another.
+
+![compare3](images/compare3.png)
