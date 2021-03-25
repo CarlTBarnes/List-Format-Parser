@@ -32,6 +32,11 @@ The LIST Help tab documents Modifiers and other Properties.
 
 ![list tab](images/readme5.png)
 
+From the "Format Lines" tab you can click the "Preview Format" button to open a Window showing a LIST with that Format().
+   The "Format" button opens my Preview Class LIST view to see the Format as shown below. You can also view all the PROPLIST's for a Column.
+
+![preview](images/readme6.png)
+
 ### Comparison
 
 In Source control comparing a LIST,FORMAT() and #FIELDS() as a multiline block can make it impossible to see the changes. This picture has what are normally left and right stacked viewing the LIST control.

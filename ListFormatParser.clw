@@ -979,7 +979,7 @@ S1 STRING(1)
       END 
 ViewWindow WINDOW('Preview FORMAT()'),AT(,,470,150),GRAY,SYSTEM,MAX,ICON('LFmtIcon.ico'), |
             FONT('Microsoft Sans Serif',8),RESIZE
-        LIST,AT(4,50),FULL,USE(?LIST:View),VSCROLL,FROM(ViewQ)
+        LIST,AT(4,50),FULL,USE(?LIST:View),HVSCROLL,FROM(ViewQ)
         BUTTON('CB'),AT(3,4,19,12),USE(?PrvClsBtn),SKIP,TIP('CB Window Preview Class Window Introspection')
         BUTTON('&For<13,10>mat'),AT(3,19,19,25),USE(?FmtBtn),SKIP,TIP('Format() view using CB Window' & |
                 ' Preview Class to see PROPLIST: and more...')
