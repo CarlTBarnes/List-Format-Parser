@@ -28,8 +28,33 @@ OmitWndPrv EQUATE(1)                 !Set to (1) if you do not have CBWndPreview
   MAP
 ListFormatParser    PROCEDURE() 
 MsgLineBreak        PROCEDURE(STRING Txt),STRING
-GetExample          PROCEDURE(BYTE ExpNo),STRING 
+GetExample          PROCEDURE(BYTE ExpNo),STRING
+ModifierHelpPopup PROCEDURE(STRING XPos, STRING YPos) 
   END
+!Region Global data
+ModifierHelp STRING(' Pipe = Right Border   M=Resizable ' &|
+     '<13,10> _ = Underline ' &|
+     '<13,10> / = LastOnLine ' &|
+     '<13,10> ? = Locator ' &|
+     '<13,10> # = FieldNo ' &|
+     '<13,10>' &|
+     '<13,10> * = Colors in Q ' &|
+     '<13,10> B(c)=BarFrame Color ' &|
+     '<13,10> E(fbsb)=Color Defaults ' &|
+     '<13,10>  ' &|
+     '<13,10> F = Fixed (cannot scroll) ' &|
+     '<13,10> I = Icon ' &|
+     '<13,10> J = Icon Transparent ' &|
+     '<13,10> M = Resizable     |=RightBorder ' &|
+     '<13,10> P = Tip Cell QText' &|
+     '<13,10> Q = Tip "Default" Column ' &|
+     '<13,10> S(w)=ScrollBar ' &|
+     '<13,10> T(s)=Tree (Surpress: B=Boxes I=Indent L=Lines R=Root 1=Offset) ' &|
+     '<13,10> Y = Cell Style No. in Q ' &|
+     '<13,10> Z(#) = Column Style' &|
+     '<13,10>' &|
+     '<13,10> Queue Order: *Color - Icon index - Tree level - Y style code - P tip' )
+!endRegion
 
   CODE
   ListFormatParser()
@@ -59,6 +84,7 @@ Tabs1Line       BOOL
     HelpCls.Init()    
     ACCEPT   
         CASE EVENT()
+        OF EVENT:CloseWindow ; LOOP Ndx=2 TO 64 ; POST(EVENT:CloseWindow,,Ndx) ; END
 !        OF EVENT:Sized      ; IF ~DoResizePosted THEN POST(EVENT:DoResize). ; DoResizePosted=1
 !        OF EVENT:DoResize   ; DoResizePosted=0
 !           IF ~Tabs1Line AND ?Sheet1{PROP:TabRows} > 1 THEN 
@@ -88,6 +114,8 @@ Tabs1Line       BOOL
         OF ?CopyLineFmtBtn   ; SETCLIPBOARD(Fmt:InLines)
         OF ?CopyExplainBtn   ; SETCLIPBOARD(Fmt:Explain)  
         OF ?CopyLineFmtPlusExplainBtn ; SETCLIPBOARD(CLIP(Fmt:InLines) &'<13,10>' & Fmt:Explain ) 
+        OF   ?ModHelp2Btn
+        OROF ?ModHelpBtn     ; START(ModifierHelpPopup,,0{PROP:XPos}+0{PROP:Width},0{PROP:YPos}+20)
 
         OF ?CopyListLineFmtBtn    ; SETCLIPBOARD(ListParsed)
         OF ?CopyListFlatBtn       ; SETCLIPBOARD(ListFlat)
@@ -680,7 +708,8 @@ Format2QCls.AssignSLM       PROCEDURE(*STRING ToStr, STRING FromStr, *USHORT Out
 HelpCls.Init   PROCEDURE()
 
     CODE !( _Char,  _Name,  _Prop,  _Desc) 
-
+    ?ModHelpBtn{PROP:Tip}=ModifierHelp
+    ?ModHelp2Btn{PROP:Tip}=ModifierHelp
     SELF.Add1Q('L'  ,'PROPLIST:Left :HeaderLeft'        ,'Justification Left of Data or Heading'     ,'Left alignment of column data, or heading text. This may be offset by an (Indent).')
     SELF.Add1Q('R'  ,'PROPLIST:Right :HeaderRight'      ,'Justification Right of Data or Heading'    ,'Right alignment of column data, or heading text. This may be offset by an (Indent).')
     SELF.Add1Q('C'  ,'PROPLIST:Center  :HeaderCenter'   ,'Justification Center of Data or Heading'   ,'Center alignment of column data, or heading text. This may be offset by an (Indent).')
@@ -913,3 +942,29 @@ Exp4 STRING('Window WINDOW(''LIST Everything''),AT(,,395,224),GRAY,FONT(''Micros
     RETURN Exp4
     END
     RETURN Exp3
+!--------------------------
+ModifierHelpPopup PROCEDURE(STRING XPos, STRING YPos) 
+ModWin WINDOW('Modifiers'),AT(,,180,210),GRAY,RESIZE,SYSTEM,FONT('Segoe UI',8),ICON('LFmtIcon.ico')
+        TEXT,AT(0,0),USE(ModifierHelp),FLAT,HVSCROLL,READONLY,FULL,FONT('Consolas',9)
+    END
+P LONG,DIM(4),STATIC
+ThreadOpen LONG,STATIC
+    CODE  
+    IF ThreadOpen THEN  
+       POST(EVENT:User+1,,ThreadOpen)
+       RETURN
+    END
+    ThreadOpen=THREAD()
+    OPEN(ModWin) 
+    IF P[3] THEN SETPOSITION(0,P[1],P[2],P[3],P[4]) ELSE SETPOSITION(0,Xpos,YPos).
+    ?ModifierHelp{PROP:Color}    =80000018h !COLOR:InfoBackground
+    ?ModifierHelp{PROP:FontColor}=80000017h !COLOR:InfoText
+    ACCEPT 
+        CASE EVENT()
+        OF EVENT:User+1
+           0{PROP:Iconize}=0 ; 0{PROP:Active}=1
+        END
+    END
+    ThreadOpen=0
+    GETPOSITION(0,P[1],P[2],P[3],P[4])
+    RETURN

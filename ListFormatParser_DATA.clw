@@ -127,15 +127,16 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
             END
             TAB(' &FORMAT Lines '),USE(?TabFormatLines),TIP('FORMAT() and #FIELDS() parsed to one co' & |
                     'lumn per line')
-                PROMPT('Format in Lines'),AT(140,29),USE(?Fmt:InLines:Prompt)
-                BUTTON('Copy Format'),AT(203,23,55,20),USE(?CopyLineFmtBtn),SKIP,ICON(ICON:Copy), |
+                PROMPT('FORMAT()<13,10>in Lines:'),AT(140,25,40,18),USE(?Fmt:InLines:Prompt),CENTER
+                BUTTON('Copy Format'),AT(194,23,57,22),USE(?CopyLineFmtBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy FORMAT() to Clipboard<13,10>Parsed one column per line as shown below'), |
                         LEFT
-                BUTTON('Copy Format and Explain'),AT(271,23,74,20),USE(?CopyLineFmtPlusExplainBtn),SKIP, |
+                BUTTON('Copy Format and Explain'),AT(257,23,74,22),USE(?CopyLineFmtPlusExplainBtn),SKIP, |
                         ICON(ICON:Copy),TIP('Copy FORMAT + Explain to Clipboard'),LEFT
+                BUTTON,AT(342,23,22,22),USE(?ModHelpBtn),ICON(ICON:Help),SKIP,TIP('Modifier Letter Help')
                 TEXT,AT(139,52),FULL,USE(Fmt:InLines),SKIP,HVSCROLL,FONT('Consolas',9)
                 PROMPT('Fields'),AT(8,27),USE(?PROMPT1)
-                BUTTON('Copy Fields'),AT(39,23,51,20),USE(?CopyLineFieldsBtn),SKIP,ICON(ICON:Copy), |
+                BUTTON('Copy Fields'),AT(39,23,51,22),USE(?CopyLineFieldsBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy #Fields() to Clipboard<13,10>Parsed one field per line'),LEFT
                 TEXT,AT(8,52,126),FULL,USE(Flds:InLines),HVSCROLL,FONT('Consolas',9)
             END
@@ -144,6 +145,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                 PROMPT('Explain'),AT(7,23),USE(?Fmt:Explain:Prompt)
                 BUTTON,AT(12,35,18,18),USE(?CopyExplainBtn),SKIP,ICON(ICON:Copy),TIP('Copy Format Ex' & |
                         'plain to Clipboard')
+                BUTTON,AT(12,60,18,18),USE(?ModHelp2Btn),ICON(ICON:Help),SKIP,TIP('Modifier Letter Help')                        
                 TEXT,AT(39,26),FULL,USE(Fmt:Explain),HVSCROLL,FONT('Consolas',9)
             END
             TAB(' &LIST Lines '),USE(?TabListLines),TIP('All LIST attributes parsed as one per line')
@@ -210,4 +212,3 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
             END
         END
     END
-
