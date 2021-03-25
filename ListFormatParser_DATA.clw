@@ -101,7 +101,7 @@ ListParsedHScrollOff  SHORT     !AKA Wrap lines
 
 Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRAY,SYSTEM,MAX, |
             ICON('LFmtIcon.ico'),FONT('Segoe UI',8),RESIZE
-        SHEET,AT(2,2),FULL,USE(?Sheet1),JOIN
+        SHEET,AT(6,2),FULL,USE(?Sheet1),JOIN
             TAB(' L&IST '),USE(?TabInput)
                 PROMPT('L&IST Code:'),AT(6,26),USE(?ListControl:Prompt)
                 BUTTON('P&aste Code<13,10>and Process'),AT(45,21,74,22),USE(?PasteBtn),SKIP, |
@@ -132,8 +132,10 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                         TIP('Copy FORMAT() to Clipboard<13,10>Parsed one column per line as shown below'), |
                         LEFT
                 BUTTON('Copy Format and Explain'),AT(257,23,74,22),USE(?CopyLineFmtPlusExplainBtn),SKIP, |
-                        ICON(ICON:Copy),TIP('Copy FORMAT + Explain to Clipboard'),LEFT
-                BUTTON,AT(342,23,22,22),USE(?ModHelpBtn),ICON(ICON:Help),SKIP,TIP('Modifier Letter Help')
+                        ICON(ICON:Copy),TIP('Copy FORMAT + Explain to Clipboard'),LEFT 
+                BUTTON('Preview<13,10>Format()'),AT(344,23,62,22),USE(?PreviewListBtn),SKIP,ICON(ICON:ZOOM), |
+                        TIP('Preview Format in a LIST on a Window'),LEFT
+                BUTTON,AT(419,23,22,22),USE(?ModHelpBtn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')
                 TEXT,AT(139,52),FULL,USE(Fmt:InLines),SKIP,HVSCROLL,FONT('Consolas',9)
                 PROMPT('Fields'),AT(8,27),USE(?PROMPT1)
                 BUTTON('Copy Fields'),AT(39,23,51,22),USE(?CopyLineFieldsBtn),SKIP,ICON(ICON:Copy), |

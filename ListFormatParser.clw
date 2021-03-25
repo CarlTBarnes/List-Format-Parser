@@ -21,15 +21,16 @@
   INCLUDE('CBCodeParse.INC'),ONCE          
   INCLUDE('CBString.INC'),ONCE          
 
-OmitWndPrv EQUATE(1)                 !Set to (1) if you do not have CBWndPreviewClass
-!  INCLUDE('CBWndPreview.INC'),ONCE  !Download from https://github.com/CarlTBarnes/WindowPreview
-!WndPrvCls   CBWndPreviewClass       !At least download the LibSrc files and put in this folder
+OmitWndPrv EQUATE(0)                 !Set to (1) if you do not have CBWndPreviewClass
+  INCLUDE('CBWndPreview.INC'),ONCE  !Download from https://github.com/CarlTBarnes/WindowPreview
+WndPrvCls   CBWndPreviewClass       !At least download the LibSrc files and put in this folder
     
   MAP
 ListFormatParser    PROCEDURE() 
 MsgLineBreak        PROCEDURE(STRING Txt),STRING
 GetExample          PROCEDURE(BYTE ExpNo),STRING
-ModifierHelpPopup PROCEDURE(STRING XPos, STRING YPos) 
+ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos)
+PreviewList         PROCEDURE(STRING pListFormat) 
   END
 !Region Global data
 ModifierHelp STRING(' Pipe = Right Border   M=Resizable ' &|
@@ -130,6 +131,8 @@ Tabs1Line       BOOL
             END 
         OF ?RunAgainBtn ; RUN(COMMAND('0'))
         OF ?DebugTabs   ; DO TabHideSyncRtn 
+        OF ?PreviewListBtn 
+            IF Fmt:Format THEN START(PreviewList,,Fmt:Format) ELSE Message('Process the LIST','Preview'). 
         END !Case Accepted() 
         
         CASE FIELD()
@@ -942,7 +945,7 @@ Exp4 STRING('Window WINDOW(''LIST Everything''),AT(,,395,224),GRAY,FONT(''Micros
     RETURN Exp4
     END
     RETURN Exp3
-!--------------------------
+!====================================================
 ModifierHelpPopup PROCEDURE(STRING XPos, STRING YPos) 
 ModWin WINDOW('Modifiers'),AT(,,180,210),GRAY,RESIZE,SYSTEM,FONT('Segoe UI',8),ICON('LFmtIcon.ico')
         TEXT,AT(0,0),USE(ModifierHelp),FLAT,HVSCROLL,READONLY,FULL,FONT('Consolas',9)
@@ -968,3 +971,38 @@ ThreadOpen LONG,STATIC
     ThreadOpen=0
     GETPOSITION(0,P[1],P[2],P[3],P[4])
     RETURN
+!====================================================
+PreviewList PROCEDURE(STRING pListFormat)
+Fmt:Format  STRING(4000)        !FONT('Segoe UI',9)
+ViewQ QUEUE
+S1 STRING(1)
+      END 
+ViewWindow WINDOW('Preview FORMAT()'),AT(,,470,150),GRAY,SYSTEM,MAX,ICON('LFmtIcon.ico'), |
+            FONT('Microsoft Sans Serif',8),RESIZE
+        LIST,AT(4,50),FULL,USE(?LIST:View),VSCROLL,FROM(ViewQ)
+        BUTTON('CB'),AT(3,4,19,12),USE(?PrvClsBtn),SKIP,TIP('CB Window Preview Class Window Introspection')
+        BUTTON('&For<13,10>mat'),AT(3,19,19,25),USE(?FmtBtn),SKIP,TIP('Format() view using CB Window' & |
+                ' Preview Class to see PROPLIST: and more...')
+        TEXT,AT(27,4,,40),FULL,USE(Fmt:Format),SKIP,VSCROLL,FONT('Consolas',9)
+    END
+P LONG,DIM(4),STATIC    
+PreviewCls   CBWndPreviewClass
+    CODE 
+    Fmt:Format=pListFormat
+    OPEN(ViewWindow)
+    IF P[3] THEN SETPOSITION(0,P[1],P[2],P[3],P[4]).
+    PreviewCls.Init() ; HIDE(PreviewCls.ReflectionBtn)
+    PreviewCls.InitList(?LIST:View,ViewQ,'ViewQ') 
+    0{PROP:MinWidth}=100 ; 0{PROP:MinHeight}=100
+    ?LIST:View{PROP:Format}=UNQUOTE(pListFormat)
+    0{PROP:Text}=0{PROP:Text} &' Length=' & LEN(CLIP(pListFormat)) &' @ '& FORMAT(CLOCK(),@t6) 
+    ACCEPT
+        IF FIELD() THEN PreviewCls.SelectedLast=?LIST:View.
+        CASE ACCEPTED()
+        OF ?Fmt:Format ; ?LIST:View{PROP:Format}=UNQUOTE(Fmt:Format) ; DISPLAY ; SELECT(?LIST:View)  
+        OF ?FmtBtn     ; PreviewCls.ListPROPs(?LIST:View, ?LIST:View{PROP:Type},'LIST','?LIST:View') 
+        OF ?PrvClsBtn  ; POST(EVENT:Accepted, PreviewCls.ReflectionBtn)
+        END 
+    END
+    GETPOSITION(0,P[1],P[2],P[3],P[4])
+    RETURN 
