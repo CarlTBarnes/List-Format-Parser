@@ -37,6 +37,13 @@ From the "Format Lines" tab you can click the "Preview Format" button to open a 
 
 ![preview](images/readme6.png)
 
+### Window ... Editor
+
+I often paste the Format into the Window... Editor and make my changes there much faster than via the List Designer. I also can go fast and not freeze the IDE.
+ In this example I wanted to make sure all pictures had commas and were large enough for -999,999.99.
+
+![editor](images/editor1.png)
+
 ### Comparison
 
 In Source control comparing a LIST,FORMAT() and #FIELDS() as a multiline block can make it impossible to see the changes. This picture has what are normally left and right stacked viewing the LIST control.
