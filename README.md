@@ -36,6 +36,7 @@ The LIST Help tab documents Modifiers and other Properties.
 
 From the "Format Lines" tab you can click the "Preview Format" button to open a Window showing a LIST with that Format().
  Sample data lines are generated showing the maximum numbers that will fit.
+ Cells with Color show in Red. Cells with Style show in Green. Icons and Trees show.
 
 ![preview](images/readme6.png)
 
