@@ -1989,7 +1989,7 @@ P7Q Parse7QType
 !--------------    
 FontRtn ROUTINE
     DATA
-FFace   STRING(64)
+FFace   STRING(32)
 FSize   LONG
 FStyle  LONG
 FCHar   LONG
