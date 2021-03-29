@@ -4,6 +4,7 @@
 ! 24-Mar-2021  Published on GitHub https://github.com/CarlTBarnes/List-Format-Parser
 ! 26-Mar-2021  Showed on Clarion Live episode #604 Magical GitHub Mystery Tour
 ! 28-Mar-2021  Add Sample data rows in List Preview, change Font, and more 
+! 29-Mar-2021  Sample decimals as .1234
 !--------------------------------------
 ! Tips: Can be used to Copy Columns (Duplicate) because each column is on one line
 !       If a LIST changes FORMAT comparing the Source with the Columns parsed 1 per Line works better. Also with Fields
@@ -34,7 +35,11 @@ MsgLineBreak        PROCEDURE(STRING Txt),STRING
 GetExample          PROCEDURE(BYTE ExpNo),STRING
 ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos) 
 ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
-PreviewList         PROCEDURE(STRING pListFormat) 
+PreviewList         PROCEDURE(STRING pListFormat)
+DB                  PROCEDURE(STRING DbTxt) 
+        MODULE('Win')
+OutputDebugString   PROCEDURE(*cstring Msg),PASCAL,RAW,NAME('OutputDebugStringA'),DLL(1)
+        END    
   END
 !Region Global data
 ModifierHelp STRING(' Pipe = Right Border   M=Resizable ' &|
@@ -1212,7 +1217,7 @@ StyleZ  LONG
      IF ColQ:PicType<>'P' THEN ColQ:PicType=lower(ColQ:PicType).
      CASE ColQ:PicType
      OF 'n' ; ColQ:DataText = SELF.Number1234(ColQ:Picture)
-     OF 'e' ; ColQ:DataText='12345'
+     OF 'e' ; ColQ:IsLong=1 ; ColQ:DataLong=1234500
      OF 'd' ; ColQ:IsLong=1 ; ColQ:DataLong=Date5[1] ; Date5[1] += 64
      OF 't' ; ColQ:IsLong=1 ; ColQ:DataLong=Time5[1]
      OF   'P'   !<-- Upper P 
@@ -1289,9 +1294,8 @@ AddColumnQ ROUTINE
     EXIT
 !------------------------------------
 VlbView.Number1234 PROCEDURE(STRING sPicture)!,STRING    
-N       DECIMAL(21,3)
+N       DECIMAL(21)
 I       DECIMAL(2)
-IDiv    DECIMAL(5,3)
 NewTry      CSTRING(32)
 Worked_N    LIKE(N)     !Last Try w/o ####
 Commas_N    LIKE(N)     !Last try #,###,### with most Commas (Grouping ,._)
@@ -1301,34 +1305,25 @@ CPicture    CSTRING(32)
 picFill     PSTRING(2)  ! _=Space *=**** 0=0000 kills Grouping
 picGrouping PSTRING(2)  !1000s Grouping . _=Space   Default Comma
 picPlaceSep PSTRING(2)  !Pennies . , v
-picDecimals PSTRING(3)  !Numb Decimal Digits
+picDecimals PSTRING(3)  !Number Decimal Digits e.g. 2 if @n9.2
     CODE
     sPicture=lower(sPicture)
     CPicture=CLIP(sPicture) 
-    DO ParseForCommaPeriodRtn       
-    IF picDecimals >='0' THEN 
-       N=.12 ; I=3  ; IDiv=.01
-    ELSE
-       N=1   ; I=2  ; IDiv=1
-    END
-    LOOP 16 TIMES
+    DO ParseForCommaPeriodRtn 
+    N=1 ; I=2
+    LOOP 20 TIMES
         NewTry=CLIP(LEFT(FORMAT(N,CPicture))) 
         IF INSTRING('#',NewTry) THEN BREAK.   !Overflow shows #'s
         Worked_N = N
         IF LEN(picGrouping) THEN !Want Most Commas ','
-           NewCount=ChrCount(NewTry,picGrouping)  ! ',' 
+           NewCount=ChrCount(NewTry,picGrouping) ! ',' 
            IF NewCount >= CommaCnt THEN 
               Commas_N = Worked_N ; CommaCnt = NewCount 
            END
         END
-        N *= 10 ; N += (I * IDiv) ; I += 1 ; IF I > 9 THEN I=0.
+        N *= 10 ; N += I ; I += 1 ; IF I > 9 THEN I=0.
     END
-    IF Worked_N THEN 
-       Worked_N=CHOOSE(~Commas_N,Worked_N,Commas_N)
-    ELSE
-       Worked_N=1
-    END 
-    RETURN Worked_N
+    RETURN CHOOSE(~Commas_N,Worked_N,Commas_N) + .12345
 !------------------------------------
 ParseForCommaPeriodRtn ROUTINE
     DATA
@@ -1423,3 +1418,8 @@ VlbView.VLBprc PROCEDURE(LONG xRow, USHORT xCol)
   IF ColQ:IsLong THEN RETURN ColQ:DataLong.
   RETURN CLIP(ColQ:DataText) 
 !EndRegion  
+!-------------------------     
+DB PROCEDURE(STRING DbTxt)
+CStr CSTRING(SIZE(DbTxt)+12)
+  CODE
+  CStr='ListFmt: ' & CLIP(DbTxt)&'<13,10>' ; OutputDebugString(CStr) ; RETURN
