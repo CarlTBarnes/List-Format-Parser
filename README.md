@@ -32,10 +32,17 @@ The LIST Help tab documents Modifiers and other Properties.
 
 ![list tab](images/readme5.png)
 
+### Preview List
+
 From the "Format Lines" tab you can click the "Preview Format" button to open a Window showing a LIST with that Format().
-   The "Format" button opens my Preview Class LIST view to see the Format as shown below. You can also view all the PROPLIST's for a Column.
+ Sample data lines are generated showing the maximum numbers that will fit.
 
 ![preview](images/readme6.png)
+
+The "Format" button opens my Window Preview Class LIST view to see the Format as shown below.
+ You can view all the PROPLIST's for a Column. You can Re-Format the list to view different settings.
+
+![formar](images/readme7.png)
 
 ### Window ... Editor
 

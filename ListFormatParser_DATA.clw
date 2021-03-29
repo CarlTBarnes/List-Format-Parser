@@ -102,12 +102,12 @@ ListParsedHScrollOff  SHORT     !AKA Wrap lines
 Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRAY,SYSTEM,MAX, |
             ICON('LFmtIcon.ico'),FONT('Segoe UI',8),RESIZE
         SHEET,AT(6,2),FULL,USE(?Sheet1),JOIN
-            TAB(' L&IST '),USE(?TabInput)
+            TAB(' L&IST Code... '),USE(?TabInput)
                 PROMPT('L&IST Code:'),AT(6,26),USE(?ListControl:Prompt)
                 BUTTON('P&aste Code<13,10>and Process'),AT(45,21,74,22),USE(?PasteBtn),SKIP, |
                         ICON(ICON:Paste),TIP('Paste Clipboard into List Code entry and Process'),LEFT
                 BUTTON('&Process<13,10>LIST'),AT(127,21,58,22),USE(?ProcessBtn),ICON(ICON:VCRplay),LEFT
-                TEXT,AT(7,47,,228),FULL,USE(ListControl),HVSCROLL,FONT('Consolas',9)
+                TEXT,AT(7,49,,226),FULL,USE(ListControl),HVSCROLL,FONT('Consolas',9)
                 BUTTON('&Close'),AT(193,21,42,22),USE(?CloseBtn),SKIP,STD(STD:Close)
                 BUTTON('&ReRun'),AT(425,21,35,18),USE(?RunAgainBtn),SKIP,TIP('Run Another Instance')
                 CHECK('Debug Tabs'),AT(245,21),USE(DebugTabs),SKIP,TIP('Show debug Message() during ' & |
@@ -147,16 +147,20 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                 PROMPT('Explain'),AT(7,23),USE(?Fmt:Explain:Prompt)
                 BUTTON,AT(12,35,18,18),USE(?CopyExplainBtn),SKIP,ICON(ICON:Copy),TIP('Copy Format Ex' & |
                         'plain to Clipboard')
-                BUTTON,AT(12,60,18,18),USE(?ModHelp2Btn),ICON(ICON:Help),SKIP,TIP('Modifier Letter Help')                        
+                BUTTON,AT(12,60,18,18),USE(?PreviewList2Btn),ICON(ICON:ZOOM),SKIP,TIP('Preview LIST')
+                BUTTON,AT(12,85,18,18),USE(?ModHelp2Btn),ICON(ICON:Help),SKIP,TIP('Modifier Letter Help')                        
                 TEXT,AT(39,26),FULL,USE(Fmt:Explain),HVSCROLL,FONT('Consolas',9)
             END
             TAB(' &LIST Lines '),USE(?TabListLines),TIP('All LIST attributes parsed as one per line')
-                BUTTON('Copy LIST'),AT(61,22,55,20),USE(?CopyListLineFmtBtn),SKIP,ICON(ICON:Copy), |
+                BUTTON('Copy LIST'),AT(61,22,55,22),USE(?CopyListLineFmtBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy LIST below to Clipboard'),LEFT
                 PROMPT('LIST Parsed<13,10>into Lines:'),AT(8,24,47,18),USE(?ListParsed:Prompt)
                 CHECK('Wrap lines'),AT(136,26),USE(ListParsedHScrollOff),TIP('Remove HScroll so line' & |
-                        's wrap')
-                TEXT,AT(8,47),FULL,USE(ListParsed),HVSCROLL,FONT('Consolas',9)
+                        's wrap')  
+                BUTTON('Preview<13,10>Format()'),AT(344,23,62,22),USE(?PreviewList3Btn),SKIP,ICON(ICON:ZOOM), |
+                        TIP('Preview Format in a LIST on a Window'),LEFT
+                BUTTON,AT(419,23,22,22),USE(?ModHelp3Btn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')                        
+                TEXT,AT(8,52),FULL,USE(ListParsed),HVSCROLL,FONT('Consolas',9)
             END
             TAB(' History '),USE(?TabHistory),TIP('History of processed code to reload previous')
                 LIST,AT(7,23),FULL,USE(?LIST:HistoryQ),VSCROLL,FONT('Consolas',9),FROM(HistoryQ), |

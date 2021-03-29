@@ -130,6 +130,7 @@ ListPROPs      PROCEDURE(LONG ListFEQ, LONG FeqTypeNo, STRING FeqTypeName, STRIN
 ListReFORMAT   PROCEDURE(LONG FEQ, LONG FeqTypeNo, STRING FeqTypeName, STRING FeqName) 
 SystemPROPs    PROCEDURE()
 SystemMetrics  PROCEDURE()
+SideDoorCall   PROCEDURE(LONG CallDoorNo, LONG FEQ, LONG FeqTypeNo, STRING FeqTypeName, STRING FeqName)
 GuideLines     PROCEDURE(LONG FEQ, LONG FeqTypeNo, STRING FeqTypeName, STRING FeqName)
 PropPickList   PROCEDURE(*STRING OutHexProp, <Parse7QType InP7Q>),BOOL,PROC
 Win32PropsAdd  PROCEDURE(PropQType PrpQ, LONG HndWnd, LONG FEQ, LONG FeqTypeNo)     !Windows API properties

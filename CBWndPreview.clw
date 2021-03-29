@@ -3,7 +3,7 @@
 ! CBWndPreviewClass (c) Carl Barnes 2018-2021 - MIT License
 ! Download: https://github.com/CarlTBarnes/WindowPreview
 !------------------------------------------------------------
-VersionWndPrv EQUATE('WndPrv 03-20-21.1200')
+VersionWndPrv EQUATE('WndPrv 03-28-21.1920')
     INCLUDE('KEYCODES.CLW'),ONCE
     INCLUDE('EQUATES.CLW'),ONCE
 CREATE:Slider_MIA   EQUATE(36)      !Not defined in Equates until C11 sometime
@@ -466,6 +466,27 @@ F LONG,AUTO
      END 
   END     
   RETURN RetLvl
+!-----------------------------------
+CBWndPreviewClass.SideDoorCall PROCEDURE(LONG CallDoorNo, LONG FEQ, LONG FeqTypeNo, STRING FeqTypeName, STRING FeqName)
+SysMenuCls SysMenuClass
+Save_GHide LIKE(GloT:Hide)
+  CODE  !03/28/21 For ListFormatParser to call ListPROPs directly takes setup of SysMenu. Code from .Reflection() setup
+  SYSTEM{7A58h}=1 ; SYSTEM{7A7Dh}=MSGMODE:CANCOPY !PROP:PropVScroll PROP:MsgModeDefault
+  PWnd &= SELF.WndRef
+  IF ~ConfigGrp_DidGet THEN SELF.ConfigGetAll(). 
+  Save_GHide=GloT:Hide ; GloT:Hide=1
+  FREE(SysMenuClsQ) ; CLEAR(SysMenuClsQ) ; SysMnQ:WinRef &= PWnd ; SysMnQ:hWindow=PWnd{PROP:Handle} ; SysMnQ:ZOrder=1 ; ADD(SysMenuClsQ)
+  CASE CallDoorNo
+  OF 1 ; Self.ControlPROPs (FEQ, FeqTypeNo, FeqTypeName, FeqName)
+  OF 2 ; Self.ResizeControl(FEQ, FeqTypeNo, FeqTypeName, FeqName)
+  OF 3 ; Self.ListPROPs    (FEQ, FeqTypeNo, FeqTypeName, FeqName) !ListFormatParser
+  OF 4 ; Self.ListReFORMAT (FEQ, FeqTypeNo, FeqTypeName, FeqName) 
+  OF 5 ; Self.WindowPROPs()
+  OF 6 ; Self.ResizeWindow()
+  OF 7 ; Self.SystemPROPs()    
+  END
+  GloT:Hide=Save_GHide
+  RETURN 
 !-----------------------------------------------------------
 ! Parent control can Hide or Disable Children. See PROP:Enabled Prop:Visible. Show different Icon?
 !   Maybe Checkbox to [ ] Show only Hide/Disable/ReadOnly that also shows parent PROP:Enabled Prop:Visible
@@ -2423,7 +2444,7 @@ Window WINDOW('WYSIWYG Resize'),AT(,,485,207),GRAY,IMM,SYSTEM,FONT('Segoe UI',9)
             CHECK('NoSheet'),AT(251,81),USE(Poz:ShNoSheet),SKIP,TIP('No visible 3D Panel.<13,10>Tab ' & |
                     'Ear location and orientation reverses.')
             CHECK('Wizard'),AT(251,91),USE(Poz:ShWizard),SKIP,TIP('No Tab Ears')
-            CHECK('No Theme'),AT(251,101),USE(Poz:ShNoTheme),SKIP,TIP('No Windows Colors')
+            CHECK('No Theme'),AT(251,101),USE(Poz:ShNoTheme),SKIP,TIP('No Visual Styles for SHEET<13,10>Also for LIST, must set before Accept loop')
             LIST,AT(251,112,42,10),USE(Poz:ShStyle),SKIP,TIP('PROP:TabSheetStyle visual style of the' & |
                     ' Tab Ears'),DROP(5),FROM('Defaut|#0|B & W|#1|Colored|#2|Squared|#3|Boxed|#4')
             BUTTON,AT(295,79,14,13),USE(?TabPickBtn),SKIP,ICON(ICON:Pick),TIP('Pick Tab to Show')
@@ -2879,7 +2900,7 @@ FontRtn ROUTINE
 !        END
 !HazFont GROUP(WazFont),PRE(HzF).
 
-FFace   STRING(32)
+FFace   STRING(64)
 FSize   LONG
 FColor  LONG
 FStyle  LONG
@@ -3895,6 +3916,7 @@ MakeOverList PROCEDURE(LONG F, BYTE CfgChg=0) !Color Lists to tell from APP
 FC LONG(603000h) !804000h !Color:Navy !TODO Let User Config and save
 BC LONG(0f1fcfbH)
   CODE
+  F{PROP:NoTheme}=1
   IF CfgChg AND ~CFG:MakeOvrList THEN FC=-1 ; BC=-1 ; ELSIF ~CFG:MakeOvrList THEN RETURN .
   F{PROP:Color}=BC ; F{PROP:FontColor}=FC 
   F{PropList:DefHdrBackColor}=BC ; F{PropList:DefHdrTextColor}=FC 
@@ -3976,7 +3998,7 @@ CP1 STRING('7C00Text 7C01Type 7C08Left 7C09LeftOffSet 7C0CRight 7C0DRightOffSet'
  ' 7C71Meta 7C72Modal 7C73MSG 7C74NoBar 7C75NoMerge 7C76PageAfter 7C77PageAfterNum 7C78PageBefore'&|
  ' 7C79PageBeforeNum 7C7APassword 7C7BReadOnly 7C7CREQ 7C7DReset 7C7ERound 7C7FScroll'&|
  ' 7C80Separate 7C81Skip 7C82STD 7C83Step 7C84System 7C85Format 7C87Check 7C88TRN 7C89UPR'&|
- ' 7C8BVScroll 7C8EItems 7C91Auto 7C92ToolBox 7C93Palette 7C95Thread 7C96Handle 7C99Follows'&|
+ ' 7C8BVScroll 7C8EItems 7C90SelEnd 7C91Auto 7C92ToolBox 7C93Palette 7C95Thread 7C96Handle 7C99Follows'&|
  ' 7C9EVScrollPos 7CA0Tip 7CA3Vertical 7CA4Smooth 7CA6Progress 7CA7Visible 7CA8Enabled 7CA9Wizard'&| !dup SliderPos7CA6 
  ' 7CAAChoiceFEQ 7CABClientHandle 7CACLineCount 7CADMinWidth 7CAEMinHeight 7CAFMaxWidth'&|
  ' 7CB0MaxHeight 7CB7Spread 7CBAScreenText 7CBBHScrollPos 7CBFValue 7CC0Value,2 7CC2TabRows'&| !dup Value7CBF Array[2] TrueValue7CBF FalseValue7CC0
@@ -4004,14 +4026,17 @@ CP_WINDOW    STRING(' 7A71ToolBar 7A72MenuBar ')
 CP_OLEOCX    STRING(' 7CEAAutoSize 7CEBClip 7CECStretch 7CEDZoom 7CEECompatibility 7CEFDesign 7CF0Document 7CF1Link 7CF2Align 7CF3Cancel 7CF4TextAlign 7CF5Object 7CF6License 7CF8Language 7CF9Interface' & |
                     ' 7CC6Create 7CC7SaveAs 7CC8Open 7CC9Blob 7CCADoVerb 7CCBSizeMode 7CCCSelectInterface 7CCDAddRef 7CCERelease 7CCFDeactivate 7CD0Update 7CD1Paste 7CD2ReportException 7CD3PasteLink 7CD4Copy' & |
                     ' 7CD5CanPaste 7CD6CanPasteLink 7CD7WindowUI 7CD8DesignMode 7CD9Ctrl 7CDAGrabHandles 7CDBOLE 7CDCIsRadio 7CDDLastEventName 7CDECLSID 7CDFProgID ') !Docs say some are write-only YMMV
-CP_EndSpace  STRING(' ')
-   END
+CP_Selected  STRING(' 7C8FSelected              ')  !SelStart for ENTRY TEXT
+CP_EndSpace  STRING(' ')         ! 7C8FSelStart  <-Add for All
+   END 
+Add_SelStart              STRING(' 7C8FSelStart')   
 CP  STRING(SIZE(CPGroup)),OVER(CPGroup)
     CODE
     CASE FeqTypeNo
     OF CREATE:Sheet      ; CLEAR(CP_Sheet_NA) ; CLEAR(CP_Slider)
     OF CREATE:Slider_MIA ; CLEAR(CP_Sheet)    ; CLEAR(CP_Slider_NA)
-    OF -1 !ALL for Pick
+    OF CREATE:Entry OROF CREATE:Text OROF CREATE:SingleLine OROF CREATE:Combo ; CP_Selected=Add_SelStart
+    OF -1 ; CP_Selected=Add_SelStart & CP_Selected     !ALL for Pick
     ELSE                 ; CLEAR(CP_Sheet)    ; CLEAR(CP_Slider)
     END
     EquateXStringParse(OutP7Q,4,CP) 
