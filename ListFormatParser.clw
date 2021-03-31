@@ -5,6 +5,7 @@
 ! 26-Mar-2021  Showed on Clarion Live episode #604 Magical GitHub Mystery Tour
 ! 28-Mar-2021  Add Sample data rows in List Preview, change Font, and more 
 ! 29-Mar-2021  Sample decimals as .1234
+! 31-Mar-2021  ModifierHelpPopup STATIC variables Thread Safe with Interlocked. Example, not much risk, or none.
 !--------------------------------------
 ! Tips: Can be used to Copy Columns (Duplicate) because each column is on one line
 !       If a LIST changes FORMAT comparing the Source with the Columns parsed 1 per Line works better. Also with Fields
@@ -39,6 +40,9 @@ PreviewList         PROCEDURE(STRING pListFormat)
 DB                  PROCEDURE(STRING DbTxt) 
         MODULE('Win')
 OutputDebugString   PROCEDURE(*cstring Msg),PASCAL,RAW,NAME('OutputDebugStringA'),DLL(1)
+InterlockedCompareExchange PROCEDURE(*LONG Destination, LONG ExChangeToValue, LONG CompareDestToValue),LONG,PASCAL,DLL(1)
+InterlockedExchange        PROCEDURE(*LONG Target, LONG SetToValue),LONG,PROC,PASCAL,DLL(1)
+
         END    
   END
 !Region Global data
@@ -990,11 +994,12 @@ ModWin WINDOW('Modifiers'),AT(,,180,210),GRAY,RESIZE,SYSTEM,FONT('Segoe UI',8),I
 P LONG,DIM(4),STATIC
 ThreadOpen LONG,STATIC
     CODE  
-    IF ThreadOpen THEN  
-       POST(EVENT:User+1,,ThreadOpen)
+    !03/31/21 ThreadSafe  .... IF ThreadOpen ==========0             !ICE() will set ThreadOpen=THREAD() IF it was =0
+    IF InterlockedCompareExchange(ThreadOpen,THREAD(), 0) <> 0 THEN  !Returns initial value of ThreadOpen so IF <>0 is already running
+       POST(EVENT:User+1,,ThreadOpen)                                !Possible Race Condition that TheadOPen was set to Zero by a closing window in this time slice
        RETURN
     END
-    ThreadOpen=THREAD()
+    !03/31/21 This "ThreadOpen=THREAD()" is done in InterlockedCompareExchange() only when ThreadOpen=0
     OPEN(ModWin) 
     IF P[3] THEN SETPOSITION(0,P[1],P[2],P[3],P[4]) ELSE SETPOSITION(0,Xpos,YPos).
     ?ModifierHelp{PROP:Color}    =80000018h !COLOR:InfoBackground
@@ -1005,8 +1010,8 @@ ThreadOpen LONG,STATIC
            0{PROP:Iconize}=0 ; 0{PROP:Active}=1
         END
     END
-    ThreadOpen=0
     GETPOSITION(0,P[1],P[2],P[3],P[4])
+    InterlockedExchange(ThreadOpen,0)   !03/31/21 does ThreadOpen=0 Thread Safe
     RETURN
 !====================================================
 ChrCount PROCEDURE(STRING Text2Scan, STRING ChrList)!LONG 
