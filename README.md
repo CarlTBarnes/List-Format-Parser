@@ -1,5 +1,7 @@
 ## List-Format-Parser
 
+Discuss this tool on ClarionHub: https://clarionhub.com/t/list-format-parser-split-columns-into-lines-for-view-edit-compare-also-list-previewer/3991?u=carlbarnes
+
 View the LIST's Format() string split into one line per column. Explain and Help on Modifier letters. Useful for ...
 
 * Under Source Control it is easier to understand changes to the LIST by viewing FORMAT in Lines
