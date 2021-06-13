@@ -94,11 +94,12 @@ InitList        PROCEDURE(LONG ListFEQ, *QUEUE ListFromQueue, <STRING NameOfQ>) 
 AllOffHDRS      PROCEDURE(BOOL UnHide=1, BOOL UnDisable=1, BOOL UnReadOnly=1, BOOL UnSkip=1) !1=Turn Off (Hide,Disable,Readonly,Skip) - UNLESS Control Key is down
 AllFixNumbers   PROCEDURE() !Fix #####.## numbers to 9999.99 - CANNOT do in SECTION('AfterOpen'), must do in Once SECTION('InAccept')
 Start           PROCEDURE() ! START HERE Open the Controls List i.e. just calls .Reflection()
-QueueReflection PROCEDURE(*QUEUE ListFromQueue, STRING NameOfQueue) !View Queue without Window for Roberto Artigas
+QueueReflection PROCEDURE(*QUEUE ListFromQueue, STRING NameOfQueue, BYTE ViewQRecords=0) !View Queue
 ClassReflection PROCEDURE(*GROUP ClassRef, STRING NameOfClass) !03/14/21
 GroupReflection PROCEDURE(*GROUP GroupRef, STRING NameOfGroup) !03/14/21
-
-InitWorker      PROCEDURE(Window W) !Allow MG to not use my .Init()
+FileReflection  PROCEDURE(*FILE FileRef, <STRING NameOfFile>)  !View File RECORD
+ShowReflection  PROCEDURE(Window W, SIGNED SelectedLast)  !MG Call into .Reflection
+InitWorker      PROCEDURE(Window W) 
 Glo_IsPreviewEXE  &BYTE    !&=Glo:IsPreviewEXE
 Glo_Built         &PSTRING !&=Glo:Built (38)
 GloT_Caption      &PSTRING !&=GloT:Caption (200)
@@ -123,6 +124,7 @@ TakeAccepted   PROCEDURE(),BYTE
 Reflection     PROCEDURE() !LIST of Controls on WndRef. Unhide/Enable. See SYS Window Ctrl Props. Resize!
 WindowPROPs    PROCEDURE()
 ControlPROPs   PROCEDURE(LONG FEQ, LONG FeqTypeNo, STRING FeqTypeName, STRING FeqName)
+PROPsEditor    PROCEDURE(LONG FEQ, LONG FeqTypeNo, STRING FeqTypeName, STRING FeqName)
 ResizeControl  PROCEDURE(LONG FEQ, LONG FeqTypeNo, STRING FeqTypeName, STRING FeqName)
 ResizeWindow   PROCEDURE()
 SnapToPreview  PROCEDURE() 
@@ -135,7 +137,7 @@ GuideLines     PROCEDURE(LONG FEQ, LONG FeqTypeNo, STRING FeqTypeName, STRING Fe
 PropPickList   PROCEDURE(*STRING OutHexProp, <Parse7QType InP7Q>),BOOL,PROC
 Win32PropsAdd  PROCEDURE(PropQType PrpQ, LONG HndWnd, LONG FEQ, LONG FeqTypeNo)     !Windows API properties
 PropDescribe   PROCEDURE(LONG PropEqt,*STRING InOutValue, BYTE BigLong2Hex),BOOL,PROC
-PropQAdd       PROCEDURE(PropQType PrpQ, LONG PQEquate, STRING PQName, STRING PQVal, <STRING FilterVals>)
+PropQAdd       PROCEDURE(PropQType PrpQ, LONG PQEquate, STRING PQName, STRING PQVal, <STRING FilterVals>, BYTE AddBlank=0)
 PropQCopy2Clip PROCEDURE(PropQType PrpQ)   !Copy PQ to Clipboard
 ConfigGetAll   PROCEDURE() 
 ConfigPut      PROCEDURE(*? CfgValue)
@@ -154,6 +156,8 @@ GdFEQ         LONG,DIM(2)
 GrdArea       USHORT
             END
 GridQ       &GridQType,PRIVATE
+BoxIt       PROCEDURE(LONG FEQ=0)
+BoxItFEQ    LONG
 !------------ Event Logging 06/26/20
 EvtLog  GROUP
 Started   BYTE
