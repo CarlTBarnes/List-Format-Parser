@@ -26,7 +26,7 @@ The Explain tab tries to make the Format easier to understand
 
 ![list tab](images/readme3.png)
 
-The History shows all the LISTs processed since the program opened. You can go back to any prior LIST. 
+The History shows all the LISTs processed since the program opened. You can go back to any prior LIST.
 
 ![list tab](images/readme4.png)
 
@@ -45,7 +45,11 @@ From the "Format Lines" tab you can click the "Preview Format" button to open a 
 The "Format" button opens my Window Preview Class LIST view to see the Format as shown below.
  You can view all the PROPLIST's for a Column. You can Re-Format the list to view different settings.
 
-![formar](images/readme7.png)
+![format](images/readme7.png)
+
+Double clicking on a row 2 in the above list shows the "Column LISTPROP" tab displaying each LISTPROP for Column 2 e.g. Header is "Seq.". The Mod column shows the Modifier used in the FORMAT string e.g. Header is ~~ where ~Seq.~ is in the Format. Notice that Column 2 is FieldNo 6 which is because Column 1 is has *Colors which require 4 LOQGs in the Queue.
+
+![listprop](images/readme8.png)
 
 ### Window ... Editor
 
