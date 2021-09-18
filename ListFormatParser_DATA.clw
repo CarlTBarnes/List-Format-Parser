@@ -121,8 +121,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                         'cter in spaces so they can be seen to debug coding alignment')
                 BUTTON('Load Test Code...'),AT(391,280),USE(?GetExpPickBtn),SKIP,TIP('Pick Text Exam' & |
                         'ple Code')
-                PROMPT('Paste your LIST,FORMAT(),#FIELD() code above and press the Process List but' & |
-                        'ton to see it parsed'),AT(43,283),USE(?Instrux)
+                PROMPT('Paste your LIST,FORMAT(),#FIELD() code above and press the Process List butt' & |
+                        'on to see it parsed'),AT(43,283),USE(?Instrux)
                 BUTTON,AT(6,279,18,18),USE(?CopyListBtn),SKIP,ICON(ICON:Copy),TIP('Copy List Code')
             END
             TAB(' &FORMAT Lines '),USE(?TabFormatLines),TIP('FORMAT() and #FIELDS() parsed to one co' & |
@@ -132,9 +132,9 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                         TIP('Copy FORMAT() to Clipboard<13,10>Parsed one column per line as shown below'), |
                         LEFT
                 BUTTON('Copy Format and Explain'),AT(257,23,74,22),USE(?CopyLineFmtPlusExplainBtn),SKIP, |
-                        ICON(ICON:Copy),TIP('Copy FORMAT + Explain to Clipboard'),LEFT 
-                BUTTON('Preview<13,10>Format()'),AT(344,23,62,22),USE(?PreviewListBtn),SKIP,ICON(ICON:ZOOM), |
-                        TIP('Preview Format in a LIST on a Window'),LEFT
+                        ICON(ICON:Copy),TIP('Copy FORMAT + Explain to Clipboard'),LEFT
+                BUTTON('Preview<13,10>Format()'),AT(344,23,62,22),USE(?PreviewListBtn),SKIP, |
+                        ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
                 BUTTON,AT(419,23,22,22),USE(?ModHelpBtn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')
                 TEXT,AT(139,52),FULL,USE(Fmt:InLines),SKIP,HVSCROLL,FONT('Consolas',9)
                 PROMPT('Fields'),AT(8,27),USE(?PROMPT1)
@@ -147,8 +147,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                 PROMPT('Explain'),AT(7,23),USE(?Fmt:Explain:Prompt)
                 BUTTON,AT(12,35,18,18),USE(?CopyExplainBtn),SKIP,ICON(ICON:Copy),TIP('Copy Format Ex' & |
                         'plain to Clipboard')
-                BUTTON,AT(12,60,18,18),USE(?PreviewList2Btn),ICON(ICON:ZOOM),SKIP,TIP('Preview LIST')
-                BUTTON,AT(12,85,18,18),USE(?ModHelp2Btn),ICON(ICON:Help),SKIP,TIP('Modifier Letter Help')                        
+                BUTTON,AT(12,60,18,18),USE(?PreviewList2Btn),SKIP,ICON(ICON:Zoom),TIP('Preview LIST')
+                BUTTON,AT(12,85,18,18),USE(?ModHelp2Btn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')
                 TEXT,AT(39,26),FULL,USE(Fmt:Explain),HVSCROLL,FONT('Consolas',9)
             END
             TAB(' &LIST Lines '),USE(?TabListLines),TIP('All LIST attributes parsed as one per line')
@@ -156,10 +156,10 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                         TIP('Copy LIST below to Clipboard'),LEFT
                 PROMPT('LIST Parsed<13,10>into Lines:'),AT(8,24,47,18),USE(?ListParsed:Prompt)
                 CHECK('Wrap lines'),AT(136,26),USE(ListParsedHScrollOff),TIP('Remove HScroll so line' & |
-                        's wrap')  
-                BUTTON('Preview<13,10>Format()'),AT(344,23,62,22),USE(?PreviewList3Btn),SKIP,ICON(ICON:ZOOM), |
-                        TIP('Preview Format in a LIST on a Window'),LEFT
-                BUTTON,AT(419,23,22,22),USE(?ModHelp3Btn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')                        
+                        's wrap')
+                BUTTON('Preview<13,10>Format()'),AT(344,23,62,22),USE(?PreviewList3Btn),SKIP, |
+                        ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
+                BUTTON,AT(419,23,22,22),USE(?ModHelp3Btn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')
                 TEXT,AT(8,52),FULL,USE(ListParsed),HVSCROLL,FONT('Consolas',9)
             END
             TAB(' History '),USE(?TabHistory),TIP('History of processed code to reload previous')
@@ -173,11 +173,11 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                 PROMPT('Cell:  Width Justification LRCD (Indent) Modifiers ~CellHead~ Justify(Indent' & |
                         'Head) @picture@'),AT(9,32),USE(?HelpSyntaxCell),FONT('Consolas',9)
                 TEXT,AT(10,48,454,64),USE(HelpSyntax),SKIP,VSCROLL,FONT('Consolas',9),READONLY
-                LIST,AT(10,118,275,150),USE(?List:ModifierQ),VSCROLL,FROM(ModifierQ),FORMAT('21L(2)|' & |
-                        'M~Mod~C(0)@s4@Z(1)70L(2)|M~PROPLIST:~@s100@Z(2)149L(2)~Modifier Description' & |
-                        ' (click to sort)~@s60@'),ALRT(CtrlC), ALRT(CtrlShiftC)
-                TEXT,AT(293,118,171),FULL,USE(ModQ:Desc),VSCROLL,FONT('Consolas',9),READONLY
-                TEXT,AT(10,274,275),FULL,USE(HelpModOrder),SKIP,VSCROLL,FONT('Consolas',9),READONLY
+                LIST,AT(10,118,275),FULL,USE(?List:ModifierQ),VSCROLL,FROM(ModifierQ),FORMAT('21L(2)' & |
+                        '|M~Mod~C(0)@s4@Z(1)70L(2)|M~PROPLIST:~@s100@Z(2)149L(2)~Modifier Descriptio' & |
+                        'n (click to sort)~@s60@'),ALRT(CtrlC), ALRT(CtrlShiftC)
+                TEXT,AT(293,118,171,150),USE(ModQ:Desc),VSCROLL,FONT('Consolas',9),READONLY
+                TEXT,AT(293,274),FULL,USE(HelpModOrder),SKIP,HVSCROLL,FONT('Consolas',9),READONLY
             END
             TAB(' Flat '),USE(?TabFlat),TIP('LIST code flattened to one line')
                 BUTTON('Copy Flat'),AT(58,22,,14),USE(?CopyListFlatBtn),SKIP,TIP('Copy Flat Code to ' & |

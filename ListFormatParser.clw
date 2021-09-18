@@ -6,6 +6,7 @@
 ! 28-Mar-2021  Add Sample data rows in List Preview, change Font, and more 
 ! 29-Mar-2021  Sample decimals as .1234
 ! 31-Mar-2021  ModifierHelpPopup STATIC variables Thread Safe with Interlocked. Example, not much risk, or none.
+! 18-Spe-2021  Change Help Tab so can drag window taller and see all modifiers.
 !--------------------------------------
 ! Tips: Can be used to Copy Columns (Duplicate) because each column is on one line
 !       If a LIST changes FORMAT comparing the Source with the Columns parsed 1 per Line works better. Also with Fields
