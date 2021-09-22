@@ -1,4 +1,5 @@
-!---- Data and WINDOW for List Format Parser ----
+!---- Data and WINDOW for List Format Parser ----   
+!Region -- Data for List Parse
 Ndx             LONG     
 FlattenCls      CBCodeFlattenClass     
 ParserCls       CBCodeParseClass     
@@ -98,6 +99,39 @@ Sort            STRING(7)       !ModQ:Sort = lower(Char) + Rec# so Unique Key
 PrefixFieldInExplain  SHORT(1)
 ShowExplainSpaces     SHORT(0)
 ListParsedHScrollOff  SHORT     !AKA Wrap lines
+!EndRegion -- Data for List Parse
+!Region -- Data for Generate Format
+GenFmt_Simple   GROUP,PRE(GenSim)
+Columns             BYTE(9)                 !GenSim:Columns
+Width               USHORT(80)              !GenSim:Width
+JustLCR             STRING('L')             !GenSim:JustLCR
+Indent              BYTE(2)                 !GenSim:Indent          ()
+Picture             STRING(16)              !GenSim:Picture         @ @  
+RightBorder         BYTE(1)                 !GenSim:RightBorder     |
+Underline           BYTE                    !GenSim:Underline       _
+Fixed               BYTE                    !GenSim:Fixed           F
+Resize              BYTE(1)                 !GenSim:Resize          M
+Colored             BYTE                    !GenSim:Colored         *
+StyleY              BYTE                    !GenSim:StyleY          Y
+FieldNo             BYTE                    !GenSim:FieldNo         # #
+HeaderRow           BYTE(1)                 !GenSim:HeaderRow    
+HeaderText          STRING('Column {16}')   !GenSim:HeaderText   ~ ~
+HdrJustLCR          STRING('L')             !GenSim:HdrJustLCR
+HdrIndent           BYTE(2)                 !GenSim:HdrIndent    ()
+                END
+GenFmt_Simple_Defaults  LIKE(GenFmt_Simple)                
+GenSim_Format   STRING(2000)                
+GenSim_FIELDS   STRING(2000) 
+
+GenFmt  CLASS
+SimpleGen        PROCEDURE()
+SimplePreviewBtn PROCEDURE()
+SimpleParseBtn   PROCEDURE()
+SimpleCopyBtn    PROCEDURE(BYTE CopyType)  
+SimpleLoadConfig PROCEDURE()
+ConfigGetPut     PROCEDURE(BYTE Get1_Put2, STRING CfgSection, *GROUP ConfigGrp)
+        END
+!EndRegion -- Data for Generate Format 
 
 Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRAY,SYSTEM,MAX, |
             ICON('LFmtIcon.ico'),FONT('Segoe UI',8),RESIZE
@@ -178,6 +212,67 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                         'n (click to sort)~@s60@'),ALRT(CtrlC), ALRT(CtrlShiftC)
                 TEXT,AT(293,118,171,150),USE(ModQ:Desc),VSCROLL,FONT('Consolas',9),READONLY
                 TEXT,AT(293,274),FULL,USE(HelpModOrder),SKIP,HVSCROLL,FONT('Consolas',9),READONLY
+            END
+            TAB(' Generate Format '),USE(?TabGenSimple),TIP('Generate a Simple Format')
+                GROUP('List Format Specifications for All Columns'),AT(14,22,289,110),USE(?GemSim_Group), |
+                        BOXED
+                    PROMPT('Width'),AT(21,40),USE(?GenSim:Width:Pmt)
+                    ENTRY(@n3),AT(51,40,25,10),USE(GenSim:Width)
+                    PROMPT('Picture'),AT(21,57),USE(?GenSim:Picture:Pmt)
+                    COMBO(@s12),AT(51,56,49,11),USE(GenSim:Picture),VSCROLL,TIP('Can be blank'),DROP(9), |
+                            FROM(' |s40|s80|s99|s255|n-9|n-11.2')
+                    OPTION('Data Justification'),AT(109,33,91,42),USE(GenSim:JustLCR),BOXED
+                        RADIO('Left'),AT(114,43),USE(?GenSim:JustLCR:Left),VALUE('L')
+                        RADIO('Center'),AT(114,53),USE(?GenSim:JustLCR:Center),VALUE('C')
+                        RADIO('Right'),AT(114,63),USE(?GenSim:JustLCR:Right),VALUE('R')
+                    END
+                    PROMPT('Indent'),AT(161,46),USE(?GenSim:Indent:Pmt)
+                    ENTRY(@n2),AT(162,56,,11),USE(GenSim:Indent),TIP('Center ignores Indent')
+                    PROMPT('Header Text'),AT(21,91),USE(?GenSim:HeaderText:Pmt)
+                    ENTRY(@s20),AT(22,102,78,11),USE(GenSim:HeaderText)
+                    OPTION('Header Justification'),AT(109,79,91,45),USE(GenSim:HdrJustLCR),BOXED
+                        RADIO('Left'),AT(114,89),USE(?GenSim:HdrJustLCR:Left),VALUE('L')
+                        RADIO('Center'),AT(114,99),USE(?GenSim:HdrJustLCR:Center),VALUE('C')
+                        RADIO('Right'),AT(114,109),USE(?GenSim:HdrJustLCR:Right),VALUE('R')
+                    END
+                    PROMPT('Indent'),AT(161,91),USE(?GenSim:HdrIndent:Pmt)
+                    ENTRY(@n2),AT(162,102,,11),USE(GenSim:HdrIndent),TIP('Center ignores Indent')
+                    CHECK('Right Border'),AT(218,35),USE(GenSim:RightBorder)
+                    CHECK('Resizable'),AT(218,45),USE(GenSim:Resize)
+                    CHECK('Fixed (No Scroll)'),AT(218,55),USE(GenSim:Fixed)
+                    CHECK('Underline'),AT(218,65),USE(GenSim:Underline)
+                    CHECK('Colored *'),AT(218,80),USE(GenSim:Colored),TIP('Color All Columns require' & |
+                            's 4 x LONG')
+                    CHECK('Style (Cell)'),AT(218,90),USE(GenSim:StyleY),TIP('Style for All Columns r' & |
+                            'equires 1 LONG in Queue ')
+                    CHECK('Field Number'),AT(218,101),USE(GenSim:FieldNo),TIP('Add # Field No # to a' & |
+                            'll columns')
+                END
+                BUTTON('Save as<13,10>Default'),AT(315,41,57,22),USE(?GenSimpleDefaultSaveBtn),SKIP, |
+                        TIP('Save Config')
+                BUTTON('Load<13,10>Defaults'),AT(315,70,57,22),USE(?GenSimpleDefaultLoadBtn),SKIP, |
+                        TIP('Load Saved Config')
+                BUTTON('Clear<13,10>Settings'),AT(315,100,57,22),USE(?GenSimpleClearBtn),SKIP, |
+                        TIP('Clear to Program Defaults')
+                PROMPT('Columns'),AT(14,140),USE(?GenSim:Columns:Pmt)
+                ENTRY(@n2),AT(15,152,,11),USE(GenSim:Columns)
+                BUTTON(' Generate<13,10> Format'),AT(59,140,70,23),USE(?GenSimpleFormatBtn), |
+                        ICON('LFmtIcon.ico'),TIP('Generate format using above parameters'),LEFT
+                BUTTON('Preview<13,10>Format()'),AT(148,140,66,23),USE(?GenSimplePreviewBtn),SKIP, |
+                        ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
+                BUTTON('Parse<13,10>Format'),AT(228,140,64,23),USE(?GenSimpleParseBtn),ICON(ICON:VCRplay), |
+                        TIP('Put Format into "LIST Code" tab then parse Columns to "FORMAT Lines" tab'), |
+                        LEFT
+                TEXT,AT(42,178,342,38),USE(GenSim_Format),VSCROLL,FONT('Consolas',9)
+                TEXT,AT(42,223,342,38),USE(GenSim_FIELDS),VSCROLL,FONT('Consolas',9)
+                BUTTON,AT(12,178,18,18),USE(?GenSimpleCopyFormatBtn),SKIP,ICON(ICON:Copy), |
+                        TIP('Copy Format to Clipboard')
+                BUTTON,AT(12,209,18,18),USE(?GenSimpleCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
+                        TIP('Copy Format and #Fields() to Clipboard')
+                PROMPT('What''s This: Creating a new List Format for a Queue can be tedious adding e' & |
+                        'ach column. This generates a FORMAT for the specified number of columns tha' & |
+                        't are all the same. Then just edit.'),AT(12,270,377,24),USE(?GenSimpleWhatsThis), |
+                        FONT(,10)
             END
             TAB(' Flat '),USE(?TabFlat),TIP('LIST code flattened to one line')
                 BUTTON('Copy Flat'),AT(58,22,,14),USE(?CopyListFlatBtn),SKIP,TIP('Copy Flat Code to ' & |

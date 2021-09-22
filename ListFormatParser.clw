@@ -6,7 +6,8 @@
 ! 28-Mar-2021  Add Sample data rows in List Preview, change Font, and more 
 ! 29-Mar-2021  Sample decimals as .1234
 ! 31-Mar-2021  ModifierHelpPopup STATIC variables Thread Safe with Interlocked. Example, not much risk, or none.
-! 18-Spe-2021  Change Help Tab so can drag window taller and see all modifiers.
+! 18-Sep-2021  Change Help Tab so can drag window taller and see all modifiers.
+! 21-Sep-2021  Generate Format Tab to create Simple format for multiple columns to avoids the tedious adding
 !--------------------------------------
 ! Tips: Can be used to Copy Columns (Duplicate) because each column is on one line
 !       If a LIST changes FORMAT comparing the Source with the Columns parsed 1 per Line works better. Also with Fields
@@ -81,7 +82,8 @@ DoResizePosted  BOOL
 Tabs1Line       BOOL
     CODE
     SYSTEM{PROP:PropVScroll}=1
-    ListControl = GetExample(3) 
+    ListControl = GetExample(3)
+    GenFmt.SimpleLoadConfig()
     OPEN(Window)
     0{PROP:MinWidth} =400
     0{PROP:MinHeight}=0{PROP:Height}/2  !300
@@ -153,6 +155,15 @@ Tabs1Line       BOOL
                SELECT(?TabInput)
                Message('You must Process the LIST Code before Preview.','List Format')
             END
+
+        OF ?GenSimpleFormatBtn  ; GenFmt.SimpleGen()
+        OF ?GenSimplePreviewBtn ; GenFmt.SimplePreviewBtn()
+        OF ?GenSimpleParseBtn   ; GenFmt.SimpleParseBtn()
+        OF ?GenSimpleCopyFormatBtn  ; GenFmt.SimpleCopyBtn(1)
+        OF ?GenSimpleCopyFieldsBtn  ; GenFmt.SimpleCopyBtn(3) 
+        OF ?GenSimpleDefaultSaveBtn ; GenFmt.ConfigGetPut(2,'GenSimple',GenFmt_Simple) 
+        OF ?GenSimpleDefaultLoadBtn ; GenFmt.SimpleLoadConfig() ; DISPLAY
+        OF ?GenSimpleClearBtn       ; GenFmt_Simple=GenFmt_Simple_Defaults ; DISPLAY
         END !Case Accepted() 
         
         CASE FIELD()
@@ -192,7 +203,7 @@ Tabs1Line       BOOL
     CLOSE(Window)
     RETURN
 
-TabHideSyncRtn ROUTINE  
+TabHideSyncRtn ROUTINE 
     ?TabFlat{PROP:Hide}   =1-DebugTabs
     ?TabParsed{PROP:Hide} =1-DebugTabs
     ?TabFormatQ{PROP:Hide}=1-DebugTabs
@@ -907,6 +918,93 @@ HelpCls.Init2   PROCEDURE()
      '<13,10>Indent ()  PROPLIST:xOffset  Indent / Offset from Justification' &|
      '<13,10>Modifiers  PROPLIST:xxxxxxx  Characters (listed below) to modify display format'  ! Length = 509 
    
+!================================================ 
+GenFmt.SimpleGen PROCEDURE()
+ColX USHORT,AUTO 
+Fmt  PSTRING(256)
+DataIndent PSTRING(6) 
+HdrText    PSTRING(32)
+HdrJustify PSTRING(2)
+HdrIndent  PSTRING(6)
+    CODE
+    GenSim_Format='' ; GenSim_FIELDS='#FIELDS('
+    IF ~GenSim:Columns THEN GenSim:Columns=5. ; IF GenSim:Columns > 40 THEN GenSim:Columns=40.
+    IF ~GenSim:Width THEN GenSim:Width=80.    ; IF GenSim:Width > 300 THEN GenSim:Width=300.
+    IF ~GenSim:JustLCR THEN GenSim:JustLCR='L'.
+    GenSim:Picture=LEFT(GenSim:Picture)
+    IF GenSim:Picture[1]='@' THEN GenSim:Picture=LEFT(SUB(GenSim:Picture,2,99)).
+    DataIndent=CHOOSE(~GenSim:Indent    OR GenSim:JustLCR   ='C','','('&GenSim:Indent&')')
+    HdrIndent =CHOOSE(~GenSim:HdrIndent OR GenSim:HdrJustLCR='C','','('&GenSim:HdrIndent&')')
+    HdrJustify=GenSim:HdrJustLCR
+    IF HdrJustify=GenSim:HdrJustLCR AND HdrIndent=DataIndent THEN !If Header Same no Need
+       HdrJustify='' ; HdrIndent=''
+    END
+    HdrText=CLIP(GenSim:HeaderText)
+    LOOP ColX=1 TO GenSim:Columns
+        Fmt=GenSim:Width & |
+            GenSim:JustLCR & DataIndent & |
+            CHOOSE(~GenSim:RightBorder,'','|') & |
+            CHOOSE(~GenSim:Underline  ,'','_') & |
+            CHOOSE(~GenSim:Fixed      ,'','F') & |
+            CHOOSE(~GenSim:Resize     ,'','M') & |
+            CHOOSE(~GenSim:Colored    ,'','*') & |
+            CHOOSE(~GenSim:StyleY     ,'','Y') & |
+            CHOOSE(~HdrText ,'','~'& HdrText &'_'& ColX &' ~'& HdrJustify & HdrIndent) & |
+            CHOOSE(~GenSim:Picture,'','@'& CLIP(GenSim:Picture) &'@') & |
+            CHOOSE(~GenSim:FieldNo,'','#'& ColX &'#')
+        GenSim_Format = CLIP(GenSim_Format) & Fmt 
+        GenSim_FIELDS = CLIP(GenSim_FIELDS) & CHOOSE(ColX=1,'',', ') &'Field_'& ColX
+    END
+    GenSim_FIELDS = CLIP(GenSim_FIELDS) & ')'
+    DISPLAY
+    RETURN
+!---------------------------
+GenFmt.SimplePreviewBtn PROCEDURE() 
+    CODE
+    IF ~GenSim_Format THEN GenFmt.SimpleGen().
+    START(PreviewList,,GenSim_Format)
+    RETURN
+GenFmt.SimpleParseBtn   PROCEDURE() 
+    CODE
+    IF ~GenSim_Format THEN GenFmt.SimpleGen(). 
+    ListControl=' LIST,AT(4,4),USE(?List:Que),FROM(Que),VSCROLL,VCR, |' & |
+                '<13,10> FORMAT(''' & QUOTE(CLIP(GenSim_Format)) &''') ,|' & |
+                '<13,10> ' & GenSim_FIELDS
+    SELECT(?TabInput)
+    POST(EVENT:Accepted,?ProcessBtn)
+    RETURN
+GenFmt.SimpleCopyBtn    PROCEDURE(BYTE CopyType)
+FmtCB ANY
+    CODE 
+    FmtCB=' FORMAT(''' & QUOTE(CLIP(GenSim_Format)) &''')'
+    CASE CopyType
+    OF 1 ; SETCLIPBOARD(FmtCB)
+    OF 2 ; SETCLIPBOARD(GenSim_FIELDS)
+    OF 3 ; SETCLIPBOARD(FmtCB &' ,|<13,10> '& GenSim_FIELDS)
+    END
+!----------------------------------
+GenFmt.SimpleLoadConfig PROCEDURE()
+    CODE
+    GenFmt_Simple=GenFmt_Simple_Defaults 
+    GenFmt.ConfigGetPut(1,'GenSimple',GenFmt_Simple)
+    RETURN
+GenFmt.ConfigGetPut PROCEDURE(BYTE Get1_Put2, STRING CfgSection, *GROUP ConfigGrp)
+FldX    LONG,AUTO
+CfgWho  CSTRING(32),AUTO
+CfgAny  ANY
+ConfigIni STRING('.\ListFmtConfig.INI')
+    CODE
+    LOOP FldX=1 TO 99
+         CfgWho=WHO(ConfigGrp,FldX) ; IF ~CfgWho THEN BREAK.
+         CfgAny &= WHAT(ConfigGrp,FldX) 
+         IF CfgAny &= NULL THEN Message('CfgAny &= NULL ' & FldX) ; CYCLE.
+         IF Get1_Put2 = 2 THEN 
+            PUTINI(CfgSection,CfgWho,CfgAny,ConfigIni)         
+         ELSE
+            CfgAny = GETINI(CfgSection,CfgWho,CfgAny,ConfigIni)   
+         END 
+    END 
+    RETURN    
 !================================================    
 MsgLineBreak        PROCEDURE(STRING Txt)!,STRING 
 RT      ANY
