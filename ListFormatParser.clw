@@ -8,6 +8,7 @@
 ! 31-Mar-2021  ModifierHelpPopup STATIC variables Thread Safe with Interlocked. Example, not much risk, or none.
 ! 18-Sep-2021  Change Help Tab so can drag window taller and see all modifiers.
 ! 21-Sep-2021  Generate Format Tab to create Simple format for multiple columns to avoids the tedious adding
+! 25-Sep-2021  Auto Generate Format checkbox, 1 column / line checkbox
 !--------------------------------------
 ! Tips: Can be used to Copy Columns (Duplicate) because each column is on one line
 !       If a LIST changes FORMAT comparing the Source with the Columns parsed 1 per Line works better. Also with Fields
@@ -38,6 +39,7 @@ MsgLineBreak        PROCEDURE(STRING Txt),STRING
 GetExample          PROCEDURE(BYTE ExpNo),STRING
 ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos) 
 ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
+No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Clipped
 PreviewList         PROCEDURE(STRING pListFormat)
 DB                  PROCEDURE(STRING DbTxt) 
         MODULE('Win')
@@ -160,12 +162,14 @@ Tabs1Line       BOOL
         OF ?GenSimplePreviewBtn ; GenFmt.SimplePreviewBtn()
         OF ?GenSimpleParseBtn   ; GenFmt.SimpleParseBtn()
         OF ?GenSimpleCopyFormatBtn  ; GenFmt.SimpleCopyBtn(1)
-        OF ?GenSimpleCopyFieldsBtn  ; GenFmt.SimpleCopyBtn(3) 
-        OF ?GenSimpleDefaultSaveBtn ; GenFmt.ConfigGetPut(2,'GenSimple',GenFmt_Simple) 
+        OF ?GenSimpleCopyFieldsBtn  ; GenFmt.SimpleCopyBtn(3)
+        OF ?GenSimpleDefaultSaveBtn ; GenFmt.ConfigGetPut(2,'GenSimple',GenFmt_Simple)
         OF ?GenSimpleDefaultLoadBtn ; GenFmt.SimpleLoadConfig() ; DISPLAY
         OF ?GenSimpleClearBtn       ; GenFmt_Simple=GenFmt_Simple_Defaults ; DISPLAY
-        END !Case Accepted() 
-        
+        OF ?GemSim_Group TO ?GenSim:AutoGenerate OROF ?GenSim:Columns
+           IF GenSim:AutoGenerate THEN GenFmt.SimpleGen().
+        END !Case Accepted()
+
         CASE FIELD()
         OF ?List:ModifierQ  
             GET(ModifierQ,CHOICE(?List:ModifierQ))            
@@ -933,7 +937,7 @@ HdrIndent  PSTRING(6)
     IF ~GenSim:JustLCR THEN GenSim:JustLCR='L'.
     GenSim:Picture=LEFT(GenSim:Picture)
     IF GenSim:Picture[1]='@' THEN GenSim:Picture=LEFT(SUB(GenSim:Picture,2,99)).
-    DataIndent=CHOOSE(~GenSim:Indent    OR GenSim:JustLCR   ='C','','('&GenSim:Indent&')')
+    DataIndent=CHOOSE(~GenSim:Indent    OR GenSim:JustLCR   ='C','','('&GenSim:Indent&')')    !Center ignoreIndent
     HdrIndent =CHOOSE(~GenSim:HdrIndent OR GenSim:HdrJustLCR='C','','('&GenSim:HdrIndent&')')
     HdrJustify=GenSim:HdrJustLCR
     IF HdrJustify=GenSim:HdrJustLCR AND HdrIndent=DataIndent THEN !If Header Same no Need
@@ -951,7 +955,8 @@ HdrIndent  PSTRING(6)
             CHOOSE(~GenSim:StyleY     ,'','Y') & |
             CHOOSE(~HdrText ,'','~'& HdrText &'_'& ColX &' ~'& HdrJustify & HdrIndent) & |
             CHOOSE(~GenSim:Picture,'','@'& CLIP(GenSim:Picture) &'@') & |
-            CHOOSE(~GenSim:FieldNo,'','#'& ColX &'#')
+            CHOOSE(~GenSim:FieldNo,'','#'& ColX &'#') & |
+            CHOOSE(~GenSim:OnePerLine,'','<13,10>')
         GenSim_Format = CLIP(GenSim_Format) & Fmt 
         GenSim_FIELDS = CLIP(GenSim_FIELDS) & CHOOSE(ColX=1,'',', ') &'Field_'& ColX
     END
@@ -962,13 +967,13 @@ HdrIndent  PSTRING(6)
 GenFmt.SimplePreviewBtn PROCEDURE() 
     CODE
     IF ~GenSim_Format THEN GenFmt.SimpleGen().
-    START(PreviewList,,GenSim_Format)
+    START(PreviewList,,No1310(GenSim_Format))
     RETURN
 GenFmt.SimpleParseBtn   PROCEDURE() 
     CODE
     IF ~GenSim_Format THEN GenFmt.SimpleGen(). 
     ListControl=' LIST,AT(4,4),USE(?List:Que),FROM(Que),VSCROLL,VCR, |' & |
-                '<13,10> FORMAT(''' & QUOTE(CLIP(GenSim_Format)) &''') ,|' & |
+                '<13,10> FORMAT(''' & QUOTE(No1310(GenSim_Format)) &''') ,|' & |
                 '<13,10> ' & GenSim_FIELDS
     SELECT(?TabInput)
     POST(EVENT:Accepted,?ProcessBtn)
@@ -976,7 +981,7 @@ GenFmt.SimpleParseBtn   PROCEDURE()
 GenFmt.SimpleCopyBtn    PROCEDURE(BYTE CopyType)
 FmtCB ANY
     CODE 
-    FmtCB=' FORMAT(''' & QUOTE(CLIP(GenSim_Format)) &''')'
+    FmtCB=' FORMAT(''' & QUOTE(No1310(GenSim_Format)) &''')'
     CASE CopyType
     OF 1 ; SETCLIPBOARD(FmtCB)
     OF 2 ; SETCLIPBOARD(GenSim_FIELDS)
@@ -1121,6 +1126,20 @@ CntChr LONG
         IF INSTRING(Text2Scan[X],ChrList) THEN CntChr += 1.
     END
     RETURN CntChr     
+!====================================================
+No1310 PROCEDURE(STRING Txt)
+N USHORT,AUTO
+U USHORT
+    CODE
+    LOOP N=1 TO LEN(CLIP(Txt))
+        CASE VAL(Txt[N])
+        OF 10 OROF 13 ; CYCLE
+        OF 9 ; Txt[N]=''
+        END
+        U+=1
+        IF U<N THEN Txt[U]=Txt[N].
+    END
+    RETURN SUB(Txt,1,U)
 !====================================================
 PreviewList  PROCEDURE(STRING pListFormat)
 Fmt:Format  STRING(4000) 

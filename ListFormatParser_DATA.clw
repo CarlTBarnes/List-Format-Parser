@@ -118,6 +118,8 @@ HeaderRow           BYTE(1)                 !GenSim:HeaderRow
 HeaderText          STRING('Column {16}')   !GenSim:HeaderText   ~ ~
 HdrJustLCR          STRING('L')             !GenSim:HdrJustLCR
 HdrIndent           BYTE(2)                 !GenSim:HdrIndent    ()
+AutoGenerate        BYTE(1)                 !GenSim:AutoGenerate
+OnePerLine          BYTE                    !GenSim:OnePerLine
                 END
 GenFmt_Simple_Defaults  LIKE(GenFmt_Simple)                
 GenSim_Format   STRING(2000)                
@@ -127,7 +129,7 @@ GenFmt  CLASS
 SimpleGen        PROCEDURE()
 SimplePreviewBtn PROCEDURE()
 SimpleParseBtn   PROCEDURE()
-SimpleCopyBtn    PROCEDURE(BYTE CopyType)  
+SimpleCopyBtn    PROCEDURE(BYTE CopyType)
 SimpleLoadConfig PROCEDURE()
 ConfigGetPut     PROCEDURE(BYTE Get1_Put2, STRING CfgSection, *GROUP ConfigGrp)
         END
@@ -216,7 +218,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
             TAB(' Generate Format '),USE(?TabGenSimple),TIP('Generate a Simple Format')
                 GROUP('List Format Specifications for All Columns'),AT(14,22,289,110),USE(?GemSim_Group), |
                         BOXED
-                    PROMPT('Width'),AT(21,40),USE(?GenSim:Width:Pmt)
+                    PROMPT('&Width'),AT(21,40),USE(?GenSim:Width:Pmt)
                     ENTRY(@n3),AT(51,40,25,10),USE(GenSim:Width)
                     PROMPT('Picture'),AT(21,57),USE(?GenSim:Picture:Pmt)
                     COMBO(@s12),AT(51,56,49,11),USE(GenSim:Picture),VSCROLL,TIP('Can be blank'),DROP(9), |
@@ -247,32 +249,38 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                             'equires 1 LONG in Queue ')
                     CHECK('Field Number'),AT(218,101),USE(GenSim:FieldNo),TIP('Add # Field No # to a' & |
                             'll columns')
+                    CHECK('1 Column / Line'),AT(316,164,68),USE(GenSim:OnePerLine),SKIP,LEFT, |
+                            TIP('One Column Per Line')
+                    CHECK('Auto Generate'),AT(218,118),USE(GenSim:AutoGenerate),TIP('Generate Format' & |
+                            ' on any chnage to format specs')
                 END
-                BUTTON('Save as<13,10>Default'),AT(315,41,57,22),USE(?GenSimpleDefaultSaveBtn),SKIP, |
+                BUTTON('Save as<13,10>Default'),AT(315,41,48,22),USE(?GenSimpleDefaultSaveBtn),SKIP, |
                         TIP('Save Config')
-                BUTTON('Load<13,10>Defaults'),AT(315,70,57,22),USE(?GenSimpleDefaultLoadBtn),SKIP, |
+                BUTTON('Load<13,10>Defaults'),AT(315,70,48,22),USE(?GenSimpleDefaultLoadBtn),SKIP, |
                         TIP('Load Saved Config')
-                BUTTON('Clear<13,10>Settings'),AT(315,100,57,22),USE(?GenSimpleClearBtn),SKIP, |
+                BUTTON('Clear<13,10>Settings'),AT(315,100,48,22),USE(?GenSimpleClearBtn),SKIP, |
                         TIP('Clear to Program Defaults')
                 PROMPT('Columns'),AT(14,140),USE(?GenSim:Columns:Pmt)
                 ENTRY(@n2),AT(15,152,,11),USE(GenSim:Columns)
-                BUTTON(' Generate<13,10> Format'),AT(59,140,70,23),USE(?GenSimpleFormatBtn), |
+                BUTTON(' &Generate<13,10> Format'),AT(59,140,70,23),USE(?GenSimpleFormatBtn), |
                         ICON('LFmtIcon.ico'),TIP('Generate format using above parameters'),LEFT
-                BUTTON('Preview<13,10>Format()'),AT(148,140,66,23),USE(?GenSimplePreviewBtn),SKIP, |
+                BUTTON('Pre&view<13,10>Format'),AT(148,140,66,23),USE(?GenSimplePreviewBtn),SKIP, |
                         ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
-                BUTTON('Parse<13,10>Format'),AT(228,140,64,23),USE(?GenSimpleParseBtn),ICON(ICON:VCRplay), |
+                BUTTON('&Parse<13,10>Format'),AT(228,140,64,23),USE(?GenSimpleParseBtn),ICON(ICON:VCRplay), |
                         TIP('Put Format into "LIST Code" tab then parse Columns to "FORMAT Lines" tab'), |
                         LEFT
-                TEXT,AT(42,178,342,38),USE(GenSim_Format),VSCROLL,FONT('Consolas',9)
-                TEXT,AT(42,223,342,38),USE(GenSim_FIELDS),VSCROLL,FONT('Consolas',9)
+                STRING('FORMAT'),AT(389,196,14,45),USE(?FormatLit),FONT(,12),ANGLE(2700)
+                TEXT,AT(42,178,342,76),USE(GenSim_Format),SKIP,VSCROLL,FONT('Consolas',9)
+                STRING('FIELDS'),AT(389,261,14,45),USE(?FieldsLit),FONT(,12),ANGLE(2700)
+                TEXT,AT(42,261,342,38),USE(GenSim_FIELDS),SKIP,VSCROLL,FONT('Consolas',9)
                 BUTTON,AT(12,178,18,18),USE(?GenSimpleCopyFormatBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy Format to Clipboard')
-                BUTTON,AT(12,209,18,18),USE(?GenSimpleCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
+                BUTTON,AT(12,247,18,18),USE(?GenSimpleCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy Format and #Fields() to Clipboard')
-                PROMPT('What''s This: Creating a new List Format for a Queue can be tedious adding e' & |
-                        'ach column. This generates a FORMAT for the specified number of columns tha' & |
-                        't are all the same. Then just edit.'),AT(12,270,377,24),USE(?GenSimpleWhatsThis), |
-                        FONT(,10)
+                PROMPT('What''s This:<13,10>Creating a new List Format for a Queue can be tedious ad' & |
+                        'ding each column. This generates a FORMAT for the specified number of colum' & |
+                        'ns that are all the same. Then just edit for changes.'),AT(380,27,133,90), |
+                        USE(?GenSimpleWhatsThis),FONT(,10)
             END
             TAB(' Flat '),USE(?TabFlat),TIP('LIST code flattened to one line')
                 BUTTON('Copy Flat'),AT(58,22,,14),USE(?CopyListFlatBtn),SKIP,TIP('Copy Flat Code to ' & |
