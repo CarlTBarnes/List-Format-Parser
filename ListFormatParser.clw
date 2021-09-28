@@ -937,12 +937,13 @@ HdrIndent  PSTRING(6)
     IF ~GenSim:JustLCR THEN GenSim:JustLCR='L'.
     GenSim:Picture=LEFT(GenSim:Picture)
     IF GenSim:Picture[1]='@' THEN GenSim:Picture=LEFT(SUB(GenSim:Picture,2,99)).
-    DataIndent=CHOOSE(~GenSim:Indent    OR GenSim:JustLCR   ='C','','('&GenSim:Indent&')')    !Center ignoreIndent
-    HdrIndent =CHOOSE(~GenSim:HdrIndent OR GenSim:HdrJustLCR='C','','('&GenSim:HdrIndent&')')
+    DataIndent=CHOOSE(GenSim:JustLCR   ='C','(0)','('&GenSim:Indent&')')    !Center Indent Zero
+    HdrIndent =CHOOSE(GenSim:HdrJustLCR='C','(0)','('&GenSim:HdrIndent&')')
     HdrJustify=GenSim:HdrJustLCR
-    IF HdrJustify=GenSim:HdrJustLCR AND HdrIndent=DataIndent THEN !If Header Same no Need
-       HdrJustify='' ; HdrIndent=''
+    IF HdrJustify=GenSim:JustLCR AND HdrIndent=DataIndent THEN !If Header Same as DATA ?
+       HdrJustify='' ; HdrIndent=''                            ! then no need for Header Just
     END
+    IF DataIndent='(0)' THEN DataIndent=''.
     HdrText=CLIP(GenSim:HeaderText)
     LOOP ColX=1 TO GenSim:Columns
         Fmt=GenSim:Width & |

@@ -105,7 +105,7 @@ GenFmt_Simple   GROUP,PRE(GenSim)
 Columns             BYTE(9)                 !GenSim:Columns
 Width               USHORT(80)              !GenSim:Width
 JustLCR             STRING('L')             !GenSim:JustLCR
-Indent              BYTE(2)                 !GenSim:Indent          ()
+Indent              SHORT(2)                !GenSim:Indent          ()
 Picture             STRING(16)              !GenSim:Picture         @ @  
 RightBorder         BYTE(1)                 !GenSim:RightBorder     |
 Underline           BYTE                    !GenSim:Underline       _
@@ -117,7 +117,7 @@ FieldNo             BYTE                    !GenSim:FieldNo         # #
 HeaderRow           BYTE(1)                 !GenSim:HeaderRow    
 HeaderText          STRING('Column {16}')   !GenSim:HeaderText   ~ ~
 HdrJustLCR          STRING('L')             !GenSim:HdrJustLCR
-HdrIndent           BYTE(2)                 !GenSim:HdrIndent    ()
+HdrIndent           SHORT(2)                !GenSim:HdrIndent    ()
 AutoGenerate        BYTE(1)                 !GenSim:AutoGenerate
 OnePerLine          BYTE                    !GenSim:OnePerLine
                 END
@@ -229,7 +229,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                         RADIO('Right'),AT(114,63),USE(?GenSim:JustLCR:Right),VALUE('R')
                     END
                     PROMPT('Indent'),AT(161,46),USE(?GenSim:Indent:Pmt)
-                    ENTRY(@n2),AT(162,56,,11),USE(GenSim:Indent),TIP('Center ignores Indent')
+                    ENTRY(@n-3),AT(162,56,,11),USE(GenSim:Indent),TIP('Center ignores Indent')
                     PROMPT('Header Text'),AT(21,91),USE(?GenSim:HeaderText:Pmt)
                     ENTRY(@s20),AT(22,102,78,11),USE(GenSim:HeaderText)
                     OPTION('Header Justification'),AT(109,79,91,45),USE(GenSim:HdrJustLCR),BOXED
@@ -238,7 +238,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                         RADIO('Right'),AT(114,109),USE(?GenSim:HdrJustLCR:Right),VALUE('R')
                     END
                     PROMPT('Indent'),AT(161,91),USE(?GenSim:HdrIndent:Pmt)
-                    ENTRY(@n2),AT(162,102,,11),USE(GenSim:HdrIndent),TIP('Center ignores Indent')
+                    ENTRY(@n-3),AT(162,102,,11),USE(GenSim:HdrIndent),TIP('Center ignores Indent')
                     CHECK('Right Border'),AT(218,35),USE(GenSim:RightBorder)
                     CHECK('Resizable'),AT(218,45),USE(GenSim:Resize)
                     CHECK('Fixed (No Scroll)'),AT(218,55),USE(GenSim:Fixed)
