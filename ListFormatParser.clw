@@ -9,6 +9,15 @@
 ! 18-Sep-2021  Change Help Tab so can drag window taller and see all modifiers.
 ! 21-Sep-2021  Generate Format Tab to create Simple format for multiple columns to avoids the tedious adding
 ! 25-Sep-2021  Auto Generate Format checkbox, 1 column / line checkbox
+! 28-Sep-2021  Generate Format from Queue
+! 03-Oct-2021  Generate Format from Queue allow FILE for making Browse Template Format
+!---------------------- TODO ----------  
+![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
+![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
+![ ] FILE optional CHECK('skip fields do NOT affect # #')
+![ ] Double Click on List opens Form so can edit without  !@n ... Rt  Click Popup needs 'Edit <9> Double Click'
+!    [ ] then add to Queue fields for Color,CellStyle,Right,Resize,etc as CHECk or RADIO(Y,N,Default=' ')  ,ColStyleZ string(2)
+!        those can appear in the FORM        
 !--------------------------------------
 ! Tips: Can be used to Copy Columns (Duplicate) because each column is on one line
 !       If a LIST changes FORMAT comparing the Source with the Columns parsed 1 per Line works better. Also with Fields
@@ -36,10 +45,12 @@ WndPrvCls   CBWndPreviewClass       !At least download the LibSrc files and put 
   MAP
 ListFormatParser    PROCEDURE() 
 MsgLineBreak        PROCEDURE(STRING Txt),STRING
-GetExample          PROCEDURE(BYTE ExpNo),STRING
+GetExample          PROCEDURE(BYTE ExpNo, <*STRING GenQueFmtExample>),STRING
 ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos) 
 ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
+InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt, *LONG OutLeftPos, *LONG OutRightPos, <*STRING OutBetweenStr>),LONG,PROC !Returns -1 Not Found or Length Between may =0
 No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Clipped
+Picture_N_Width     PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture ),SHORT,PROC 
 PreviewList         PROCEDURE(STRING pListFormat)
 DB                  PROCEDURE(STRING DbTxt) 
         MODULE('Win')
@@ -74,7 +85,7 @@ ModifierHelp STRING(' Pipe = Right Border   M=Resizable ' &|
      '<13,10> Queue Order: *Color - Icon index - Tree level - Y style code - P tip' )
 !endRegion
 
-  CODE
+  CODE  
   ListFormatParser()
   RETURN
 !---------------------
@@ -83,8 +94,8 @@ ListFormatParser    PROCEDURE()
 DoResizePosted  BOOL
 Tabs1Line       BOOL
     CODE
-    SYSTEM{PROP:PropVScroll}=1
-    ListControl = GetExample(3)
+    SYSTEM{PROP:PropVScroll}=1 ; SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY
+    ListControl = GetExample(3,GenQue_TextQ)
     GenFmt.SimpleLoadConfig()
     OPEN(Window)
     0{PROP:MinWidth} =400
@@ -101,6 +112,7 @@ Tabs1Line       BOOL
     ?LIST:HistoryQ{PROP:LineHeight} = 2 + ?LIST:HistoryQ{PROP:LineHeight}
     ?List:ModifierQ{PROPLIST:HasSortColumn}=1
     HelpCls.Init()    
+    IF GenQue:SelectTabAtOpen THEN SELECT(?TabGenQueue).
     ACCEPT   
         CASE EVENT()
         OF EVENT:CloseWindow ; LOOP Ndx=2 TO 64 ; POST(EVENT:CloseWindow,,Ndx) ; END
@@ -111,8 +123,8 @@ Tabs1Line       BOOL
 !           END 
         END 
         CASE ACCEPTED() 
-        OF ?PasteBtn      ; ListControl=CLIPBOARD() 
-                            POST(EVENT:Accepted,?ProcessBtn)
+        OF ?PasteBtn      ; IF ~CLIPBOARD() THEN Message('Nothing on CLIPBOARD') ; CYCLE .
+                            ListControl=CLIPBOARD() ; POST(EVENT:Accepted,?ProcessBtn)
         OF ?CopyListBtn   ; SETCLIPBOARD(ListControl)                            
         OF ?GetExpPickBtn ; ListControl = GetExample(0)  
                             POST(EVENT:Accepted,?ProcessBtn) 
@@ -148,7 +160,7 @@ Tabs1Line       BOOL
                ListControl = HisQ:ListControl
                POST(EVENT:Accepted,?ProcessBtn) 
             END 
-        OF ?RunAgainBtn ; RUN(COMMAND('0'))
+        OF ?RunAgainBtn OROF ?RunAgainGFQBtn ; RUN(COMMAND('0'))
         OF ?DebugTabs   ; DO TabHideSyncRtn 
         OF ?PreviewListBtn OROF ?PreviewList2Btn OROF ?PreviewList3Btn
             IF Fmt:Format THEN 
@@ -161,13 +173,43 @@ Tabs1Line       BOOL
         OF ?GenSimpleFormatBtn  ; GenFmt.SimpleGen()
         OF ?GenSimplePreviewBtn ; GenFmt.SimplePreviewBtn()
         OF ?GenSimpleParseBtn   ; GenFmt.SimpleParseBtn()
-        OF ?GenSimpleCopyFormatBtn  ; GenFmt.SimpleCopyBtn(1)
-        OF ?GenSimpleCopyFieldsBtn  ; GenFmt.SimpleCopyBtn(3)
+        OF ?GenSimpleCopyFormatBtn  ; GenFmt.CopyFormatBtn(?GenSim_Format,0)
+        OF ?GenSimpleCopyFieldsBtn  ; GenFmt.CopyFormatBtn(?GenSim_Format,?GenSim_FIELDS)
         OF ?GenSimpleDefaultSaveBtn ; GenFmt.ConfigGetPut(2,'GenSimple',GenFmt_Simple)
         OF ?GenSimpleDefaultLoadBtn ; GenFmt.SimpleLoadConfig() ; DISPLAY
         OF ?GenSimpleClearBtn       ; GenFmt_Simple=GenFmt_Simple_Defaults ; DISPLAY
+
+        OF ?GenQue_PasteBtn   ; IF ~CLIPBOARD() THEN Message('Nothing on CLIPBOARD') ; CYCLE .
+                                GenQue_TextQ=CLIPBOARD() ; POST(EVENT:Accepted,?GenQue_ProcessBtn)
+        OF ?GenQue_ProcessBtn ; GenFmt.QueueTextParse()  ; IF GenQue:AutoGenerate AND RECORDS(GQFieldsQ) THEN POST(EVENT:Accepted,?GenQueueFormatBtn).
+
+        OF ?GenQueueFormatBtn  ; IF ~GenQue_TextQ THEN 
+                                    ?GenQue_TextQ{PROP:Background}=Color:Yellow ; SELECT(?GenQue_TextQ) ; CYCLE
+                                 END
+                                 IF ~RECORDS(GQFieldsQ) THEN GenFmt.QueueTextParse().
+                                 GenFmt.QueueGenFormat()
+        OF ?GenQueuePreviewBtn ; GenFmt.QueuePreviewBtn()
+        OF ?GenQueueParseBtn   ; GenFmt.QueueParseBtn()
+
+        OF ?GenQueueCopyFormatBtn  ; GenFmt.CopyFormatBtn(?GenQue_Format,0)    
+        OF ?GenQueueCopyFieldsBtn  ; GenFmt.CopyFormatBtn(?GenQue_Format,?GenQue_FIELDS)
+        OF ?GenQueueDefaultSaveBtn ; GenFmt.ConfigGetPut(2,'GenQueue',GenFmt_Queue)
+        OF ?GenQueueDefaultLoadBtn ; GenFmt.QueueLoadConfig() ; DISPLAY
+        OF ?GenQueueClearBtn       ; GenFmt_Queue=GenFmt_Queue_Defaults ; DISPLAY
+        OF ?GenSim:Picture  ; GenFmt.PictureAccepted(?,' ')
+        OF ?GenQue:Pic_Date ; GenFmt.PictureAccepted(?,'D')
+        OF ?GenQue:Pic_Time ; GenFmt.PictureAccepted(?,'T') 
+
+        OF ?GenQue:Pic_Date:Popup ; GenFmt.PicturePopup(?GenQue:Pic_Date,'D') ; cycle
+        OF ?GenQue:Pic_Time:Popup ; GenFmt.PicturePopup(?GenQue:Pic_Time,'T') ; cycle
+        OF ?GenQue_BangPicBtn     ; GenFmt.BangPictureBtn()
+        END !Case Accepted()
+
+        CASE Accepted()
         OF ?GemSim_Group TO ?GenSim:AutoGenerate OROF ?GenSim:Columns
-           IF GenSim:AutoGenerate THEN GenFmt.SimpleGen().
+           IF GenSim:AutoGenerate THEN GenFmt.SimpleGen(). 
+        OF ?GemQue_Group TO ?GenQue:AutoGenerate
+           IF GenQue:AutoGenerate THEN GenFmt.QueueGenFormat().         
         END !Case Accepted()
 
         CASE FIELD()
@@ -188,7 +230,7 @@ Tabs1Line       BOOL
                CASE KEYCODE()
                OF CtrlC
                   SETCLIPBOARD(CLIP(ModQ:Char) &'  '& CLIP(ModQ:PropFULL) &'  '&CLIP(ModQ:Name)) 
-               OF CtrlShiftC  ; Message('CtrlShiftC todo copy all, or maybe put this on right click')
+               OF CtrlShiftC  ; Message('CtrlShiftC TODO Copy ALL')
                END
             OF EVENT:NewSelection
                DISPLAY(?ModQ:Desc) 
@@ -197,11 +239,14 @@ Tabs1Line       BOOL
                   OF 1 ; SETCLIPBOARD(CLIP(ModQ:Char) &'  '& CLIP(ModQ:PropFULL) &'  '&CLIP(ModQ:Name))
                   OF 2 ; SETCLIPBOARD(ModQ:PropFULL)
                   OF 3 ; SETCLIPBOARD(ModQ:Desc)
+                  OF 4 ;  ; Message('TODO Copy ALL')
                   END
                ELSE 
                   
                END    
             END 
+        OF ?List:GQFieldsQ
+            GenFmt.List:GQFieldsQ_TakeEvent()
         END 
     END
     CLOSE(Window)
@@ -829,8 +874,8 @@ HelpCls.Init   PROCEDURE()
     SELF.Add1Q('HT()' ,'PROPLIST:HdrTextColor','Color of Header Text'           ,'An "HT(color)" specifies the column header text color. Confused by the templates as a Tree so best to assign at runtime.')
 !    SELF.Add1Q('','prop','','')
 
-!TODO assign the category from the   See ListBoxFormatterPRJ.PNG
-!Header     HB HT S()
+!TODO add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree) from the See ListBoxFormatterPRJ.PNG so can sort by Cat? Must be Wider
+!Header     HB HT S()   new TYPE of Group for []
 !Data       # LRCD @
 !Flags      F * /
     
@@ -924,9 +969,9 @@ HelpCls.Init2   PROCEDURE()
    
 !================================================ 
 GenFmt.SimpleGen PROCEDURE()
-ColX USHORT,AUTO 
+ColX USHORT,AUTO
 Fmt  PSTRING(256)
-DataIndent PSTRING(6) 
+DataIndent PSTRING(6)
 HdrText    PSTRING(32)
 HdrJustify PSTRING(2)
 HdrIndent  PSTRING(6)
@@ -941,9 +986,10 @@ HdrIndent  PSTRING(6)
     HdrIndent =CHOOSE(GenSim:HdrJustLCR='C','(0)','('&GenSim:HdrIndent&')')
     HdrJustify=GenSim:HdrJustLCR
     IF HdrJustify=GenSim:JustLCR AND HdrIndent=DataIndent THEN !If Header Same as DATA ?
-       HdrJustify='' ; HdrIndent=''                            ! then no need for Header Just
+!No    HdrJustify='' ; HdrIndent=''                            ! then no need for Header Just
+!This way when split all the Justify are there to edit and make some L(2) C(0)
     END
-    IF DataIndent='(0)' THEN DataIndent=''.
+!No IF DataIndent='(0)' THEN DataIndent=''.
     HdrText=CLIP(GenSim:HeaderText)
     LOOP ColX=1 TO GenSim:Columns
         Fmt=GenSim:Width & |
@@ -953,45 +999,36 @@ HdrIndent  PSTRING(6)
             CHOOSE(~GenSim:Fixed      ,'','F') & |
             CHOOSE(~GenSim:Resize     ,'','M') & |
             CHOOSE(~GenSim:Colored    ,'','*') & |
-            CHOOSE(~GenSim:StyleY     ,'','Y') & |
+            CHOOSE(~GenSim:CellStyle  ,'','Y') & |
             CHOOSE(~HdrText ,'','~'& HdrText &'_'& ColX &' ~'& HdrJustify & HdrIndent) & |
-            CHOOSE(~GenSim:Picture,'','@'& CLIP(GenSim:Picture) &'@') & |
-            CHOOSE(~GenSim:FieldNo,'','#'& ColX &'#') & |
+            CHOOSE(~GenSim:Picture OR lower(GenSim:Picture)='none','','@'& CLIP(GenSim:Picture) &'@') & |
+            CHOOSE(~GenSim:FieldNumbered,'','#'& ColX &'#') & |
             CHOOSE(~GenSim:OnePerLine,'','<13,10>')
-        GenSim_Format = CLIP(GenSim_Format) & Fmt 
+        GenSim_Format = CLIP(GenSim_Format) & Fmt
         GenSim_FIELDS = CLIP(GenSim_FIELDS) & CHOOSE(ColX=1,'',', ') &'Field_'& ColX
     END
     GenSim_FIELDS = CLIP(GenSim_FIELDS) & ')'
     DISPLAY
     RETURN
 !---------------------------
-GenFmt.SimplePreviewBtn PROCEDURE() 
+GenFmt.SimplePreviewBtn PROCEDURE()
     CODE
     IF ~GenSim_Format THEN GenFmt.SimpleGen().
     START(PreviewList,,No1310(GenSim_Format))
     RETURN
-GenFmt.SimpleParseBtn   PROCEDURE() 
+GenFmt.SimpleParseBtn   PROCEDURE()
     CODE
-    IF ~GenSim_Format THEN GenFmt.SimpleGen(). 
+    IF ~GenSim_Format THEN GenFmt.SimpleGen().
     ListControl=' LIST,AT(4,4),USE(?List:Que),FROM(Que),VSCROLL,VCR, |' & |
                 '<13,10> FORMAT(''' & QUOTE(No1310(GenSim_Format)) &''') ,|' & |
                 '<13,10> ' & GenSim_FIELDS
     SELECT(?TabInput)
     POST(EVENT:Accepted,?ProcessBtn)
     RETURN
-GenFmt.SimpleCopyBtn    PROCEDURE(BYTE CopyType)
-FmtCB ANY
-    CODE 
-    FmtCB=' FORMAT(''' & QUOTE(No1310(GenSim_Format)) &''')'
-    CASE CopyType
-    OF 1 ; SETCLIPBOARD(FmtCB)
-    OF 2 ; SETCLIPBOARD(GenSim_FIELDS)
-    OF 3 ; SETCLIPBOARD(FmtCB &' ,|<13,10> '& GenSim_FIELDS)
-    END
 !----------------------------------
 GenFmt.SimpleLoadConfig PROCEDURE()
     CODE
-    GenFmt_Simple=GenFmt_Simple_Defaults 
+    GenFmt_Simple=GenFmt_Simple_Defaults
     GenFmt.ConfigGetPut(1,'GenSimple',GenFmt_Simple)
     RETURN
 GenFmt.ConfigGetPut PROCEDURE(BYTE Get1_Put2, STRING CfgSection, *GROUP ConfigGrp)
@@ -1002,15 +1039,675 @@ ConfigIni STRING('.\ListFmtConfig.INI')
     CODE
     LOOP FldX=1 TO 99
          CfgWho=WHO(ConfigGrp,FldX) ; IF ~CfgWho THEN BREAK.
-         CfgAny &= WHAT(ConfigGrp,FldX) 
+         CfgAny &= WHAT(ConfigGrp,FldX)
          IF CfgAny &= NULL THEN Message('CfgAny &= NULL ' & FldX) ; CYCLE.
-         IF Get1_Put2 = 2 THEN 
-            PUTINI(CfgSection,CfgWho,CfgAny,ConfigIni)         
+         IF Get1_Put2 = 2 THEN
+            PUTINI(CfgSection,CfgWho,CfgAny,ConfigIni)
          ELSE
-            CfgAny = GETINI(CfgSection,CfgWho,CfgAny,ConfigIni)   
-         END 
+            CfgAny = GETINI(CfgSection,CfgWho,CfgAny,ConfigIni)
+         END
+    END
+    RETURN
+!----------------------------------
+GenFmt.CopyFormatBtn    PROCEDURE(LONG FeqFmt, LONG FeqFields)
+FmtCB ANY
+CL CSTRING(1025),AUTO 
+LX USHORT,AUTO 
+    CODE
+    IF FeqFmt THEN
+       FmtCB=' FORMAT(' 
+       DO GetFormatRtn
+       FmtCB = FmtCB & ')'
+    END
+    IF FeqFields THEN
+       FmtCB=CHOOSE(~FmtCB,'',FmtCB&', |<13,10>') &' '& CONTENTS(FeqFields) 
+!       FmtCB=CHOOSE(~FmtCB,'',FmtCB&', |<13,10>') &' #FIELDS('
+!       DO GetFieldsRtn
+!       FmtCB = FmtCB & ')'
+    END    
+    SETCLIPBOARD(FmtCB &'<13,10>')
+    RETURN
+GetFormatRtn ROUTINE
+    LOOP LX=1 TO FeqFmt{PROP:LineCount}
+         CL=CLIP(FeqFmt{PROP:Line,LX}) ; IF ~CL AND LX>1 THEN CYCLE.
+         IF LX>1 THEN FmtCB=FmtCB &' &|<13,10> {8}'.
+         FmtCB=FmtCB &''''& QUOTE(CLIP( CL )) &''''
+    END
+    EXIT
+GetFieldsRtn ROUTINE  !TODO Split into lines? use above code
+!    LOOP LX=1 TO FeqFields{PROP:LineCount}
+!         CL=CLIP(FeqFields{PROP:Line,LX}) ; IF ~CL AND LX>1 THEN CYCLE.
+!         IF LX>1 THEN FmtCB=FmtCB &' &|<13,10> {9}'.
+!         FmtCB=FmtCB &CLIP( CL )
+!    END
+    EXIT
+!----------------------------------
+GenFmt.PictureAccepted PROCEDURE(LONG FEQ, STRING DorT)
+Pic STRING(40),AUTO
+InX SHORT,AUTO
+TipLong LONG
+    CODE
+    Pic=CONTENTS(FEQ)
+    IF Pic[1]='@' THEN Pic=LEFT(SUB(Pic,2,99)).
+    InX=LEN(CLIP(Pic))
+    IF Inx AND Pic[InX]='@' THEN Pic[InX]=''.   !he typed @n22@ with trailing @
+    CASE DorT
+    OF 'D' ; IF ~Pic THEN Pic='d17'. ; TipLong=DATE(01,22,2033)          !; TipLong=TODAY()
+    OF 'T' ; IF ~Pic THEN Pic='t7' . ; TipLong=DEFORMAT('01:23:45',@t4)  !; TipLong=CLOCK()
+    END
+    IF ~Pic THEN RETURN.
+    CHANGE(FEQ,Pic)
+    IF TipLong THEN FEQ{PROP:Tip}='  @'&CLIP(Pic) &'<13,10>  '& FORMAT(TipLong, '@' & Pic)&'  '.
+    RETURN
+!----------------------------------
+GenFmt.PicturePopup PROCEDURE(LONG FEQ, STRING DorT)
+NewPic STRING(20)
+PPic PSTRING(20)
+PX SHORT,AUTO
+FmtLong LONG
+FmtStr  STRING(32),AUTO
+S2      &STRING
+X       USHORT,AUTO
+PupTxt ANY
+PupNo  BYTE
+BtnX LONG,AUTO
+BtnY LONG,AUTO
+DateZero  PSTRING(2),STATIC
+DateSlash PSTRING(2),STATIC
+DateBlank PSTRING(2),STATIC
+TimeZero  PSTRING(2),STATIC
+TimeColon PSTRING(2),STATIC
+TimeBlank PSTRING(2),STATIC
+    CODE 
+    GETPOSITION(?,BtnX,BtnY)
+    LOOP
+       NewPic=''
+       CASE DorT
+       OF 'D' ; DO DateRtn
+       OF 'T' ; DO TimeRtn
+       END
+    WHILE NewPic='?'
+    IF NewPic THEN
+       CHANGE(FEQ,NewPic)
+       POST(EVENT:Accepted,FEQ)
+    END
+    RETURN
+DateRtn ROUTINE
+    FmtLong=DATE(11,22,2033)
+    PupTxt='Date Modifiers{{' & |
+               'Leading{{Space|Zero}' & |
+              '|Separator{{Slash <9>/|Period <9>.|Comma <9>,|Hyphen <9>-|Space <9>_}' & |
+              '|Blank{{00/00/00|Blank <9>B}' & |
+            '}|-' 
+            
+    LOOP PX=1 TO 18
+        pPic='@d' & DateZero & PX & DateSlash  & DateBlank
+        IF PX=4 OR PX=18 THEN 
+           FmtStr=FORMAT(TODAY(),PPic)
+        ELSE
+           FmtStr=FORMAT(FmtLong,PPic)
+           DO mmddyyyyRtn
+        END
+        PupTxt=PupTxt & CHOOSE(Px=17,'|-|','|') &pPic &'<9>'& CLIP(FmtStr) !&' = '& CLIP(FORMAT(FmtLong,PPic))
+    END
+    PupNo=POPUP(PupTxt,BtnX,BtnY,1)
+    IF ~PupNo THEN EXIT.
+    CASE PupNo
+    OF 1 TO 2 ; DateZero =CHOOSE(PupNo,'','0') ; NewPic='?' ; EXIT 
+    OF 3 TO 7 ; DateSlash=CHOOSE(PupNo-2,'','.','`','-','_') ; NewPic='?' ; EXIT
+    OF 8 TO 9 ; DateBlank=CHOOSE(PupNo-7,'','b') ; NewPic='?' ; EXIT
+    END    
+    NewPic='@d' & DateZero & PupNo-9 & DateSlash & DateBlank
+    EXIT
+
+mmddyyyyRtn ROUTINE
+    LOOP X=1 TO LEN(CLIP(FmtStr))
+        S2 &= FmtStr[X : X+1]
+        CASE S2
+        OF '11' ; S2='mm'
+        OF '22' ; S2='dd'
+        OF '33' OROF '20' ; S2='yy'
+        OF 'NO' OROF 'No' ; FmtStr[X : X+2]='MMM'  !'NOV'
+        END
+   END
+   EXIT
+
+TimeRtn ROUTINE 
+    FmtLong=DEFORMAT('11:22:33',@t4)
+    PupTxt='Time Modifiers{{' & |
+               'Leading{{Space|Zero}' & |
+              '|Separator{{Colon <9>:|Period <9>.|Comma <9>,|Hyphen <9>-|Space <9>_}' & |
+              '|Blank{{00:00:00|Blank <9>B}' & |
+            '}|-' 
+    LOOP PX=1 TO 8 
+        pPic='@t' & TimeZero & PX & TimeColon  & TimeBlank
+        FmtStr=FORMAT(FmtLong,PPic)
+        DO hhmmssRtn    
+        PupTxt=PupTxt & CHOOSE(Px=7,'|-|','|') &pPic &'<9>'& CLIP(FmtStr) !&' = '& CLIP(FORMAT(FmtLong,PPic))
     END 
-    RETURN    
+    PupNo=POPUP(PupTxt,BtnX,BtnY,1)
+    IF ~PupNo THEN EXIT.
+    CASE PupNo
+    OF 1 TO 2 ; TimeZero =CHOOSE(PupNo,'','0') ; NewPic='?' ; EXIT
+    OF 3 TO 7 ; TimeColon=CHOOSE(PupNo-2,'','.','`','-','_') ; NewPic='?' ; EXIT
+    OF 8 TO 9 ; TimeBlank=CHOOSE(PupNo-7,'','b') ; NewPic='?' ; EXIT
+    END     
+    NewPic='@t' & TimeZero & PupNo-9 & TimeColon & TimeBlank
+    EXIT
+hhmmssRtn ROUTINE
+    LOOP X=1 TO LEN(CLIP(FmtStr))
+        S2 &= FmtStr[X : X+1]
+        CASE S2
+        OF '11' ; S2='hh'
+        OF '22' ; S2='mm'
+        OF '33' ; S2='ss'
+        OF 'AM' ; S2='XM'
+        END
+   END
+   EXIT
+!================================================
+GenFmt.QueueTextParse PROCEDURE()   !Parse GenQue_TextQ TEXT into GQFieldsQ Queue
+TxtLineNo USHORT,AUTO
+QX      SHORT,AUTO
+XX      SHORT,AUTO
+BangX   SHORT,AUTO
+dDigits SHORT,AUTO
+dDecimals SHORT,AUTO
+Space USHORT,AUTO
+Comma USHORT,AUTO
+Paren1 LONG,AUTO
+Paren2 LONG,AUTO
+ALine STRING(256),AUTO
+PPart STRING(255),AUTO
+TPart STRING(255),AUTO
+TPartCO CSTRING(256),AUTO
+FType LIKE(GQFldQ:Type),AUTO
+Label_UPR STRING(64),AUTO
+FTypeOrig LIKE(GQFldQ:Type),AUTO
+LikeWarned BYTE
+    CODE
+    FREE(GQFieldsQ)
+    IF ~GenQue_TextQ THEN 
+        ?GenQue_TextQ{PROP:Background}=Color:Yellow
+        SELECT(?GenQue_TextQ) 
+        RETURN
+    END
+    ?GenQue_TextQ{PROP:Background}=Color:None
+    GenQue_Name='' ; GenQue_Pre=''
+!fix for spaces?    FlattenCls.Flatten(GenQue_TextQ) ; DISPLAY  !TODO move to accepted?
+
+    QX=-1
+    LOOP TxtLineNo=1 TO ?GenQue_TextQ{PROP:LineCount}
+        ALine=?GenQue_TextQ{PROP:Line,TxtLineNo}
+        IF ALine[1]='' OR LEFT(ALine,2)='. ' OR LEFT(ALine,1)='! ' |
+        OR UPPER(LEFT(ALine,4))='END ' THEN CYCLE.
+
+        IF QX = -1 THEN
+           DO TakeFirstLineRtn
+        ELSE
+           DO TakeFieldLineRtn
+        END
+
+    END
+    DISPLAY
+    RETURN
+
+TakeFirstLineRtn ROUTINE
+    DO TakeFieldLineRtn 
+    CASE UPPER(GQFldQ:Type)
+    OF 'FILE'  ; GenQue_IsFILE=1
+    OF 'QUEUE' ; GenQue_IsFILE=0
+    ELSE
+       TxtLineNo=999
+       SELECT(?GenQue_TextQ)
+       MESSAGE('The First line must be the "Label QUEUE" or FILE.' & |
+               '||The Prompt says "Queue Declaration" ?|Oh no! Seven years of college down the drain!' & |
+               '||' & ALine,'Parse - No QUEUE or FILE')
+       EXIT
+    END    
+    QX=0
+    GenQue_Name = CLIP(GQFldQ:Label)
+    GenQue_Pre = ''
+    IF InBetween('PRE(',')',TPart,Paren1,Paren2,PPart) >=0 THEN     !Find PRE(xxxx)
+       IF PPart THEN GenQue_Pre=CLIP(PPart) & ':'.                  !Not PRE()
+    ELSIF ~GenQue_IsFILE THEN                   !For FILE is no PRE() do NOT use Dot Syntax
+        GenQue_Pre = CLIP(GQFldQ:Label) & '.'   !No PRE() use Dot. Syntax
+    END
+    EXIT
+
+TakeFieldLineRtn ROUTINE
+    CLEAR(GQFieldsQ)
+    GQFldQ:FieldNo = QX+1
+    GQFldQ:Line = ALine
+    Space=INSTRING(' ',ALine,1)
+    GQFldQ:Label=SUB(ALine,1,Space) ; Label_UPR=UPPER(GQFldQ:Label)
+    GQFldQ:Pre_Label = GenQue_Pre & GQFldQ:Label
+
+    TPart=LEFT(SUB(ALine,Space,999))    !ALine now TYPE()
+    IF ~TPart THEN EXIT.                !No Type ???? just LABEL 
+
+    BangX=INSTRING('!',TPart,1)                        !A comment of !@xxxx overrides my Picture
+    CASE lower(SUB(TPart,BangX,6))
+    OF '!@omit' OROF '!omit' ; GQFldQ:OmitHow=eOmit_Omit
+    OF '!@hide' OROF '!hide' ; GQFldQ:OmitHow=eOmit_Hide
+    ELSE 
+       IF BangX AND TPart[BangX : BangX+1]='!@'  THEN 
+          GQFldQ:BangPic=SUB(TPart,BangX,32)              !so = !@xxxx            
+          IF UPPER(GQFldQ:BangPic[1:3])='!@P' THEN 
+             XX=INSTRING(GQFldQ:BangPic[3],GQFldQ:BangPic,1,4)   !@P ends at P
+             IF ~XX THEN XX=INSTRING(' ',GQFldQ:BangPic,1,1).
+          ELSE
+             XX=INSTRING(' ',GQFldQ:BangPic,1,1)       !@x ends at space, yah could have "@n12~% ~" with space, sorry
+          END
+          IF ~XX THEN XX=12.
+          GQFldQ:BangPic = SUB(GQFldQ:BangPic,1,XX)    !Trim after !@picture  Trim Junk Here
+       END !if !@
+    END !case
+    IF BangX THEN TPart=SUB(TPart,1,BangX-1).  !Cutoff !Comments
+
+    ParserCls.MakeCodeOnlyLine(TPart,TPartCO)
+    GQFldQ:TypeCode=TPartCO        !e.g.  DECIMAL(9,2,) or
+ !TODO Smash Aline or TPart
+    IF INSTRING('OVER(',UPPER(TPartCO),1) THEN 
+       Message('A Field appears to be an OVER() on line ' & TxtLineNo & |
+               '. Change that to not have an OVER().' & |
+               '||John Blutarsky:|<9>"Over? Did you say OVER? Nothing is over until we decide it is!|<9>Was it over when the Germans bombed Pearl Harbor? Hell no!..."' & |
+               '||Line: ' & ALine,'Queue Parse -- OVER Hello No!',Icon:Asterisk)        
+    END 
+    FType='?'
+    Space=STRPOS(TPart,'[ ,(!]') !End of TYPE,xxx or TYPE( or TYPE xxx
+    IF Space THEN FType=SUB(TPart,1,Space-1) ELSE FType=TPart.
+    
+    Space=INSTRING(' ',TPart,1)    !e.g. BYTE  but what about STRING('hi there')
+    Comma=INSTRING(',',TPart,1)    !e.g. QUEUE,PRE
+    Paren1=INSTRING('(',TPart,1)            !e.g. STRING(22)
+    Paren2=INSTRING(')',TPart,1,Paren1+1)   !e.g. STRING(22)
+    FTypeOrig = FType
+    FType = UPPER(FType)
+    GQFldQ:Type = UPPER(FType)
+
+    IF Paren1 AND Paren2-1 >= Paren1 AND (~Comma OR Paren1 < Comma)  THEN
+       PPart=LEFT(TPart[Paren1+1 :Paren2-1 ] ) !Now ="digits, deci" was ="(digits, deci)"
+    ELSE
+       PPart=''
+    END
+
+    CASE FType
+    OF 'DECIMAL' OROF 'PDECIMAL'
+        IF PPart THEN
+           Comma=INSTRING(',',PPart,1)             !e.g. (9,2)
+           IF Comma THEN 
+              !PPart[Comma]='.'                          !chnage 9,2 to 9.2 so decimal makes it number
+              Comma=INSTRING(',',PPart,1,Comma+1)        !   e.g. (9.2, 17.5)   a default value
+              IF Comma THEN PPart=SUB(PPart,1,Comma-1).  !cutoff default
+           END 
+           GQFldQ:TypeNums = PPart
+        END
+
+    OF 'STRING'  OROF 'CSTRING' OROF 'PSTRING' OROF 'MEMO'
+        IF PPart THEN           
+           XX = PPart + 0
+           IF PPart[1]='@' THEN                 !Is it STRING(@d2) ?
+              GQFldQ:TypeNums = PPart 
+           ELSIF PPart[1]='''' THEN  
+                Message('Don''t quote me in this but I cannot handle a STRING(''literal'')|Change to a STRING(Number). ||' & TPart)
+                !must Deformat to handle ' {#} << {{'
+           ELSIF NUMERIC(PPart) AND XX > 0 THEN            !Is it STRING( ## )
+              IF InLIST(FType,'CSTRING','PSTRING') THEN XX -= 1.
+              GQFldQ:TypeNums = XX
+           ELSE
+               ! Message('STRING PPart=' & PPart )
+                CASE lower(PPart)
+                OF 'file:maxfilename' ; GQFldQ:TypeNums=255 !EQUATE(256) 
+                OF 'file:maxfilepath' ; GQFldQ:TypeNums=260 !EQUATE(260) 
+                END 
+           END
+           IF FType='MEMO' AND INSTRING('BINARY',UPPER(TPart),1) THEN 
+              GQFldQ:OmitHow=eOmit_Omit
+           END
+        END
+    OF 'ANY'    ; GQFldQ:OmitHow=eOmit_NA_
+    OF 'GROUP'  ; GQFldQ:OmitHow=eOmit_Omit
+        IF GenQue_IsFILE THEN EXIT.  !FILE is for BROWSE template so just skip these
+        IF PPart THEN
+           Message('There is a derived GROUP( Base Type ) in line ' & TxtLineNo & |
+                   '||You need to paste in the fields from GROUP( '& CLIP(PPart) &' )'& |
+                   '||Mark this won''t do Q.Group.Field dot syntax for the #FIELDS...yet' & |
+                   '||Line: ' & ALine,'Queue Parse - Derived GROUP', Icon:Asterisk) 
+        END 
+
+    OF 'QUEUE'
+        IF PPart THEN
+           CASE Message('This a derived QUEUE( Base Type ).|You need to paste in the fields from '& CLIP(PPart) & |
+                '||Line: ' & ALine,'Queue Parse - Derived Queue', Icon:Asterisk, |
+                CHOOSE(UPPER(PPart)='FILE:QUEUE','Close|FILE:Queue','Ok'))
+           OF 2 ; SETCLIPBOARD('Name      STRING(256)<13,10>ShortName STRING(13)<13,10>Date      LONG<13,10>Time      LONG<13,10>Size      LONG<13,10>Attrib    BYTE') 
+                  Message('Fields Clipboard for Paste|You must remove (File:Queue)|={30}|' & CLIPBOARD(),PPart,ICON:Paste,,,MSGMODE:FIXEDFONT+MSGMODE:CANCOPY)
+           END 
+        END 
+    OF 'LIKE'
+        IF ~LikeWarned THEN 
+           Message('I cannot deal with LIKE() on line ' & TxtLineNo & |
+                '|You must change LIKE() to a Data Type e.g. LONG' & |
+                '|or it will be treated as a String(123).' & |
+                '||Kramer: "Why don''t you just Tell Movie Phone the Name of the Movie..."' & |
+                '||Line: ' & ALine,'Queue Parse - LIKE ... Really?',Icon:Asterisk) ; LikeWarned=1
+        END 
+    OF 'KEY' OROF 'INDEX' OROF 'RECORD' OROF 'BLOB'
+        IF GenQue_IsFILE THEN EXIT.                 !for FILE just skip these
+    ELSE !Non-Standard type
+        GQFldQ:Type = FTypeOrig  !Not Upper
+        IF FTypeOrig='&' THEN GQFldQ:OmitHow=eOmit_NA_.
+    END
+    !GQFldQ:Picture = '-?-' !was =Pic_Fld   
+
+    IF QX=-1 THEN EXIT.      !The Queue Line
+    ADD(GQFieldsQ)
+    QX += 1
+    EXIT
+!------------------------------------------------
+GenFmt.QueueGenFormat PROCEDURE()   !Build Format() using GenFmt_Queue and GQFieldsQ queue
+ColX USHORT,AUTO
+Fmt  PSTRING(256)
+DataIndent PSTRING(6)
+HdrText    PSTRING(32)
+HdrJustify PSTRING(2)
+HdrIndent  PSTRING(6)
+DataJustify PSTRING(2) 
+ColWidth   USHORT
+LastFieldNo SHORT !GQFldQ:FieldNo
+ThisFieldNo SHORT !GQFldQ:FieldNo
+    CODE
+    GenQue_Format='' ; GenQue_FIELDS='#FIELDS('
+    IF GenQue:WidthMin < 4   THEN GenQue:WidthMin=20.
+    IF GenQue:WidthMax > 500 THEN GenQue:WidthMax=500.
+    IF ~InRange(GenQue:Digits_BYTE ,1,3 ) THEN GenQue:Digits_BYTE =3. 
+    IF ~InRange(GenQue:Digits_SHORT,1,5 ) THEN GenQue:Digits_SHORT=5.   
+    IF ~InRange(GenQue:Digits_LONG ,1,10) THEN GenQue:Digits_LONG =10.  
+    IF ~InRange(GenQue:Digits_BOOL ,1,10) THEN GenQue:Digits_BOOL =1.    
+    IF ~GenQue:JustLCR THEN GenQue:JustLCR='L'.
+    HdrText='Column_'
+    LOOP ColX=1 TO RECORDS(GQFieldsQ) 
+        GET(GQFieldsQ,ColX)
+        IF GQFldQ:OmitHow AND GQFldQ:OmitHow<>eOmit_Hide THEN CYCLE.   !No output GROUP or &REF when 'N/A' or 'Omit'
+        DO FillInGQFieldsQRtn
+        PUT(GQFieldsQ)
+        CASE LOWER(GQFldQ:Picture[1]) 
+!!!        OF 'd' ;
+!!!        OF 't' ;
+        OF 'n' ; ColWidth = GQFldQ:CharsWide * 3.3 + GenQue:Indent
+        ELSE   ; ColWidth = GQFldQ:CharsWide * 4.0 + GenQue:Indent
+        END         
+        IF ColWidth < GenQue:WidthMin THEN ColWidth=GenQue:WidthMin.
+        IF ColWidth > GenQue:WidthMax THEN ColWidth=GenQue:WidthMax.
+        IF GQFldQ:OmitHow=eOmit_Hide THEN ColWidth=0.
+
+        IF ~DataJustify THEN DataJustify='L'.
+        DataIndent='('&GenQue:Indent&')'    !Center Indent Zero
+        HdrIndent =CHOOSE(GenQue:HdrJustLCR='C','(0)','('&GenQue:HdrIndent&')')   
+        HdrJustify=GenQue:HdrJustLCR
+        IF GenQue:HdrJustLCR AND DataJustify='R' THEN
+            HdrJustify='C'
+            HdrIndent='(0)'
+        END 
+        IF HdrJustify=DataJustify AND HdrIndent=DataIndent THEN !If Header Same as DATA ?
+!No        HdrJustify='' ; HdrIndent=''                            ! then no need for Header Just
+        END
+!No     IF DataIndent='(0)' THEN DataIndent=''.
+        
+        IF GenQue_IsFILE THEN                             !File assumed to be Browse so Queue always contigous
+           ThisFieldNo = CHOOSE(~GenQue:FieldNumbered,0,ColX)   !Config wants ## ?
+!TODO - Add a checkbox to allow FILE to be # # numbered like Queue
+        ELSE !a queue
+           ThisFieldNo = CHOOSE(GQFldQ:FieldNo = 1+LastFieldNo, 0, GQFldQ:FieldNo)  !If Contigius no Need
+           ThisFieldNo = CHOOSE(~GenQue:FieldNumbered,ThisFieldNo,GQFldQ:FieldNo)         !Config wants ## ?
+        END 
+        Fmt=ColWidth & |
+            DataJustify & DataIndent & |
+            CHOOSE(~GenQue:RightBorder,'','|') & |
+            CHOOSE(~GenQue:Underline  ,'','_') & |
+            CHOOSE(~GenQue:Fixed      ,'','F') & |
+            CHOOSE(~GenQue:Resize     ,'','M') & |
+            CHOOSE(~GenQue:Colored    ,'','*') & |
+            CHOOSE(~GenQue:CellStyle  ,'','Y') & | !            CHOOSE(~HdrText ,'','~'& HdrText &'_'& ColX &' ~'& HdrJustify & HdrIndent) & |
+            '~'& CLIP(GQFldQ:Label) &' ~'& HdrJustify & HdrIndent & |
+            CHOOSE(~GQFldQ:Picture,'','@'& CLIP(GQFldQ:Picture) &'@') & |
+            CHOOSE(~ThisFieldNo,'','#'& ThisFieldNo &'#') & |  !!! CHOOSE(~GenQue:FieldNo AND GQFldQ:FieldNo=1+LastFieldNo,'','#'& GQFldQ:FieldNo &'#') & |
+            CHOOSE(~GenQue:OnePerLine,'','<13,10>')
+        GenQue_Format = CLIP(GenQue_Format) & Fmt
+        GenQue_FIELDS = CLIP(GenQue_FIELDS) & CHOOSE(ColX=1,'',', ') & GQFldQ:Pre_Label
+        LastFieldNo = GQFldQ:FieldNo
+    END
+    GenQue_FIELDS = CLIP(GenQue_FIELDS) & ')'
+    DISPLAY
+    RETURN
+!-------------------------
+FillInGQFieldsQRtn ROUTINE 
+    DATA 
+XX SHORT,AUTO
+dDigits SHORT,AUTO
+dDecimals SHORT,AUTO
+Comma USHORT,AUTO
+Paren1 SHORT,AUTO
+Paren2 SHORT,AUTO
+PPart STRING(255),AUTO
+TPart STRING(255),AUTO
+FType LIKE(GQFldQ:Type),AUTO
+Label_UPR STRING(64),AUTO
+Pic_Fld  STRING(32)
+    CODE
+    IF ~GQFldQ:Pre_Label THEN GQFldQ:Pre_Label='Field_'& ColX.
+
+    Pic_Fld='s123'         !when cannot figure it out this is the @pic
+    Label_UPR=UPPER(GQFldQ:Label)
+    FType = UPPER(GQFldQ:Type)
+    CASE FType
+    OF 'BOOL'  ; Pic_Fld='n' & GenQue:Digits_BOOL & GenQue:Pic_Int_Blank 
+    OF 'BYTE'  ; Pic_Fld='n' & GenQue:Digits_BYTE & GenQue:Pic_Int_Blank
+    OF 'SHORT' OROF 'USHORT'
+             Picture_N_Width(GenQue:Digits_SHORT, 0, |
+                             CHOOSE(GenQue:Pic_Int_Minus AND FType[1]<>'U'), |
+                             GenQue:Pic_Int_Commas, GenQue:Pic_Int_Blank, Pic_Fld )
+  
+    OF 'LONG'      OROF 'ULONG'
+    OROF 'SIGNED'  OROF 'UNSIGNED'         ! 123456789
+    OROF 'COUNT_T' OROF 'POINTER_T'        ! 1,345,789,123
+             Picture_N_Width(GenQue:Digits_LONG, 0, |
+                             CHOOSE(GenQue:Pic_Int_Minus AND FType[1]<>'U'), |
+                             GenQue:Pic_Int_Commas, GenQue:Pic_Int_Blank, Pic_Fld )
+
+                IF INSTRING('DATE',Label_UPR,1) AND GenQue:LongLook4DateTime THEN
+                   Pic_Fld=GenQue:Pic_Date
+             ELSIF INSTRING('TIME',Label_UPR,1) AND GenQue:LongLook4DateTime THEN
+                   Pic_Fld=GenQue:Pic_Time
+                END
+    OF 'DATE'   ; Pic_Fld=GenQue:Pic_Date
+    OF 'TIME'   ; Pic_Fld=GenQue:Pic_Time
+
+    OF 'SREAL' OROF 'REAL' OROF 'BFLOAT4' OROF 'BFLOAT8' ; Pic_Fld='s20'
+
+    OF 'DECIMAL' OROF 'PDECIMAL'
+            PPart=GQFldQ:TypeNums
+            Comma=INSTRING(',',PPart,1)         !e.g. (9,2)
+            IF ~Comma THEN                      !DECIMAL(9) 1/o ,decimal
+               dDigits=PPart
+               dDecimals=0
+            ELSE 
+               dDigits  =SUB(PPart,1,Comma-1)
+               dDecimals=SUB(PPart,Comma+1,99)
+               IF dDecimals < 0 THEN dDecimals=0.
+            END
+            IF dDigits < dDecimals THEN dDigits=dDecimals+1.    !TODO can this happens ?
+            Picture_N_Width(dDigits, dDecimals, |
+                             GenQue:Pic_Dec_Minus, |
+                             GenQue:Pic_Dec_Commas, GenQue:Pic_Dec_Blank, Pic_Fld )
+
+!        DB('Decimal #1 TypeNums='& CLIP(GQFldQ:TypeNums) &' dDigits='& dDigits &' dDecimals=' & dDecimals  &' Pic_Fld='& CLIP(Pic_Fld) &' PPart='& CLIP(PPart) )        
+ 
+    OF 'STRING'  OROF 'CSTRING' OROF 'PSTRING' OROF 'MEMO'
+        IF GQFldQ:TypeNums[1]='@' THEN         !Was STRING(@type)
+           Pic_Fld=SUB(GQFldQ:TypeNums,2,99)
+        ELSIF NUMERIC(GQFldQ:TypeNums) THEN
+            Pic_Fld='s'& ( 0 + GQFldQ:TypeNums )
+            IF GQFldQ:TypeNums > 255 THEN Pic_Fld=''.   !Cannot do @s256
+        END
+        
+    OF 'ASTRING' OROF 'BSTRING' OROF 'ANY'  OROF 'VARIANT' ; Pic_Fld='s123'
+    OF 'GROUP' ; Pic_Fld='s123' !Group needs to be skipped? then must # fld #
+    OF 'QUEUE'
+    OF 'LIKE' ; Pic_Fld='s123'
+    ELSE !Non-Standard type
+        Pic_Fld=''
+    END
+    !IF Pic_Fld='@' then stop('@ in Pic_Fld=' & Pic_Fld ) ; Pic_Fld=SUB(Pic_Fld,2,99) .
+    IF GQFldQ:BangPic THEN 
+        Pic_Fld=SUB(GQFldQ:BangPic,3,99)
+        CASE lower(Pic_Fld)
+        OF 'd' ; Pic_Fld=GENQUE:PIC_Date
+        OF 't' ; Pic_Fld=GENQUE:PIC_Time
+        END
+    END
+    GQFldQ:Picture = Pic_Fld
+    
+    !-- Chars Width of data -----------------
+    
+    GQFldQ:CharsWide=''
+    GQFldQ:Debug=''
+    DataJustify='R'
+    CASE LOWER(Pic_Fld[1]) 
+    OF 'd' ; GQFldQ:Debug=FORMAT(DATE(10,31,2020),Pic_Fld)  ; IF LEFT(GQFldQ:Debug,1)>='A' THEN DataJustify='L'.
+    OF 't' ; GQFldQ:Debug=FORMAT(8123123,Pic_Fld) 
+    OF 'n' ; GQFldQ:Debug=FORMAT('123456789012.12',Pic_Fld) 
+    OF 'e' ; GQFldQ:Debug=FORMAT('123456789012.12',Pic_Fld) 
+    OF 'p' ; GQFldQ:Debug=SUB(Pic_Fld,2,LEN(CLIP(Pic_Fld))-2) ; DataJustify='L'
+    ELSE   ; DataJustify='L'
+    END 
+    IF GQFldQ:Debug THEN 
+       XX=LEN(CLIP(GQFldQ:Debug))
+    ELSE
+       XX=INT(ABS(DEFORMAT(Pic_Fld)))
+    END
+    IF Pic_Fld='' THEN XX=0 + GQFldQ:TypeNums .
+    IF XX < 1 THEN XX=1.
+    GQFldQ:CharsWide = XX
+    EXIT
+!================================
+GenFmt.QueuePreviewBtn PROCEDURE()
+    CODE
+    IF ~GenQue_Format THEN GenFmt.QueueGenFormat().
+    START(PreviewList,,No1310(GenQue_Format))
+    RETURN
+GenFmt.QueueParseBtn   PROCEDURE()
+    CODE
+    IF ~GenQue_Format THEN GenFmt.QueueGenFormat().
+    ListControl=' LIST,AT(4,4),FULL,USE(?List:QueName),FROM(QueName),VSCROLL, |' & |
+                '<13,10> FORMAT(''' & QUOTE(No1310(GenQue_Format)) &''') ,|' & |
+                '<13,10> ' & GenQue_FIELDS
+    SELECT(?TabInput)
+    POST(EVENT:Accepted,?ProcessBtn)
+    RETURN
+!---------------------------------    
+GenFmt.QueueLoadConfig PROCEDURE()
+    CODE
+    GenFmt_Queue=GenFmt_Queue_Defaults
+    GenFmt.ConfigGetPut(1,'GenQueue',GenFmt_Queue)
+    RETURN
+!---------------------------------- 
+GenFmt.BangPictureBtn PROCEDURE()
+ CODE
+ MESSAGE('Pictures are calculated based on Data Type and Preferences.'&|
+     '||Override the picture with a !@ comment e.g. !@n_4b !@n7.2~%~'&|
+     '||Use !@D for the default Date or !@T for the default Time.'&|
+     '||Append !@OMIT or !OMIT to exclude the field from the format.'&|
+     '|Append !@HIDE or !HIDE to make field width Zero to hide it.'&|
+     '||Example:'&|
+     '|LastRunTime  LONG  !@T4b'&|
+     '|MeaningLess  LONG  !OMIT', 'Format Generation Picture', ICON:Help)    
+!----------------------------------    
+GenFmt.List:GQFieldsQ_TakeEvent PROCEDURE()
+GQChoice LONG,AUTO
+GQMax LONG,AUTO
+NATilde PSTRING(2)
+PopNo SHORT,AUTO 
+    MAP
+GQMoveLine  PROCEDURE(SHORT UpOrDown)
+GQHideLine  PROCEDURE()
+GQOmitLine  PROCEDURE()
+    END    
+    CODE
+    GQMax = RECORDS(GQFieldsQ) ; IF ~GQMax THEN RETURN.
+    GQChoice = CHOICE(?List:GQFieldsQ)
+    IF ~GQChoice THEN GQChoice=1 ; ?List:GQFieldsQ{PROP:Selected}=1.
+    GET(GQFieldsQ,GQChoice)  ; IF ERRORCODE() THEN STOP('GET(GQFieldsQ ' & Error()) ; RETURN.
+    NATilde=CHOOSE(GQFldQ:OmitHow=eOmit_NA_,'~','')
+    CASE EVENT()
+    OF EVENT:NewSelection
+       IF KEYCODE()=MouseRight THEN DO PopupRtn.
+    OF EVENT:AlertKey
+       CASE KEYCODE() 
+       OF CtrlHome  ; GQMoveLine(-2)
+       OF CtrlUp    ; GQMoveLine(-1)
+       OF CtrlDown  ; GQMoveLine(1) 
+       OF CtrlEnd   ; GQMoveLine(2)
+       OF InsertKey ; GQHideLine()
+       OF DeleteKey ; GQOmitLine()
+       OF CtrlDelete ; DELETE(GQFieldsQ)
+       END
+    END
+PopupRtn ROUTINE
+    SETKEYCODE(0)
+    PopNo=POPUP(CHOOSE(GQChoice=1    , '~', '')  & 'Move Field to Top<9>Ctrl+Home' & |
+                CHOOSE(GQChoice=1    ,'|~','|') & 'Move Field Up<9>Ctrl+Up' & |
+                CHOOSE(GQChoice=GQMax,'|~','|') & 'Move Field Down<9>Ctrl+Down' & |
+                CHOOSE(GQChoice=GQMax,'|~','|') & 'Move Field to Bottom<9>Ctrl+End' & |
+                '|-' & |
+                '|'& NATilde & CHOOSE(GQFldQ:OmitHow<>eOmit_Hide,'Hide Field (zero width)','Un-Hide Field') &'<9>Insert' & |
+                '|'& NATilde & CHOOSE(GQFldQ:OmitHow<>eOmit_Omit,'Omit Field from List'   ,'Un-Omit Field') &'<9>Delete' & |
+                '|-|' & |
+                '|Remove from List<9>Ctrl+Delete')
+    IF ~PopNo THEN EXIT.
+    EXECUTE PopNo
+      GQMoveLine(-2)
+      GQMoveLine(-1)
+      GQMoveLine(1)
+      GQMoveLine(2)
+      GQHideLine()
+      GQOmitLine()
+      DELETE(GQFieldsQ)
+    END
+
+GQMoveLine  PROCEDURE(SHORT UpOrDown)
+NewPoz LONG,AUTO
+    CODE
+    CASE UpOrDown
+    OF -2 ; NewPoz=1
+    OF  2 ; NewPoz=GQMax
+    ELSE  ; NewPoz=GQChoice+UpOrDown
+    END
+    IF ~INRANGE(NewPoz,1,GQMax) OR NewPoz=GQChoice THEN RETURN.
+    DELETE(GQFieldsQ)
+    GQChoice = NewPoz
+    ADD(GQFieldsQ,GQChoice)
+    ?List:GQFieldsQ{PROP:Selected}=GQChoice
+    DISPLAY
+    RETURN
+GQHideLine  PROCEDURE()
+    CODE
+    IF ~NATilde THEN
+       GQFldQ:OmitHow=CHOOSE(GQFldQ:OmitHow=eOmit_Hide,'',eOmit_Hide)
+       PUT(GQFieldsQ)
+    END
+    RETURN
+GQOmitLine  PROCEDURE()
+    CODE
+    IF ~NATilde THEN
+       GQFldQ:OmitHow=CHOOSE(GQFldQ:OmitHow=eOmit_Omit,'',eOmit_Omit)
+       PUT(GQFieldsQ)
+    END
+    RETURN
+!----------------------------------
+
+
 !================================================    
 MsgLineBreak        PROCEDURE(STRING Txt)!,STRING 
 RT      ANY
@@ -1021,7 +1718,7 @@ ChX     LONG,AUTO
     END 
     RETURN RT     
 !================================================ 
-GetExample        PROCEDURE(BYTE ExpNo)!,STRING
+GetExample        PROCEDURE(BYTE ExpNo, <*STRING GenQueFmtExample>)!,STRING
 Exp1 STRING('     LIST,AT(3,22,360,121),USE(?Browse:1),IMM,HVSCROLL,MSG(''Browsing ' &|
      'Records''),FORMAT(''[27R(2)|M~Cust.~C(0)@n_6@41R(4)|M~Meter~C(0)@n_9@4C|M~P' &|
      'ort~@n1@](85)|M~I.D. Numb'' &|' &|
@@ -1067,7 +1764,8 @@ Exp5 STRING('ModTest WINDOW(''Modifiers and Picutres''),AT(,,586,90),GRAY,FONT('
      '<13,10>     ''-##-####p@30R(2)|M~Time~C(0)@t3@40L(2)|M~Date d4 ~@d4@48L(2)|M~'' & |' &|
      '<13,10>     ''E12.1 Picture~L(1)@E12.1@'')' &|
      '<13,10>  END' )     
-    CODE 
+    CODE
+    IF ~OMITTED(GenQueFmtExample) THEN DO GenQueRtn.
     IF ~ExpNo THEN 
         ExpNo=POPUP('Customer Meter|Simple Emp Type Tag|Employee Browse|Everything|Preview All Modifiers')
     END
@@ -1079,7 +1777,20 @@ Exp5 STRING('ModTest WINDOW(''Modifiers and Picutres''),AT(,,586,90),GRAY,FONT('
     RETURN Exp5
     END
     RETURN Exp3
-
+GenQueRtn ROUTINE
+    GenQueFmtExample = |
+           'DirQ  QUEUE,PRE(DirQ)   !Example of File:Queue' &|
+    '<13,10>Name       STRING(255)' &|
+    '<13,10>ShortName  STRING(13)  !Hide' &|
+    '<13,10>Date       LONG        !@d8' &|
+    '<13,10>Time       LONG' &|
+    '<13,10>Size       LONG' &|
+    '<13,10>Attrib     BYTE        !Omit' &|
+    '<13,10>      END' & | 
+    '<13,10,13,10>!1. Click "Process Queue" to parse this text into Fields List ===>' & | 
+          '<13,10>!2. Click "Generate Format" to build FORMAT from the Fields.' & | 
+    '<13,10,13,10>!Paste your QUEUE or FILE here <13,10>!then cick "Process Queue" then "Generate Format"' 
+    EXIT
     OMIT('**END**') 
 ModTest WINDOW('Modifiers and Picutres'),AT(,,586,90),GRAY,FONT('Segoe UI',9),RESIZE
  LIST,AT(1,1,583,81),USE(?List1),FORMAT('36L(2)|M*~Colored *~C(0)@s10@16L' & |
@@ -1126,7 +1837,29 @@ CntChr LONG
     LOOP X=1 TO SIZE(Text2Scan)
         IF INSTRING(Text2Scan[X],ChrList) THEN CntChr += 1.
     END
-    RETURN CntChr     
+    RETURN CntChr
+!====================================================
+InBetween PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt, *LONG OutLeftPos, *LONG OutRightPos, <*STRING OutBetweenStr>)!,LONG,PROC !Returns -1 Not Found or Length Between may be Zero
+OutLength LONG,AUTO
+PosLeft  LONG,AUTO
+PosRight LONG,AUTO
+    CODE
+    OutLeftPos=0 ; OutRightPos=0 ; OutLength = -1   !-1 = Not Found 
+    PosLeft=INSTRING(UPPER(FindLeft),UPPER(SearchTxt),1,1)             !find "PRE("
+    IF PosLeft THEN
+       PosLeft += LEN(FindLeft)                          !is ^ in "PRE(^"
+       PosRight=INSTRING(UPPER(FindRight),UPPER(SearchTxt),1,PosLeft)  !find ")"
+       IF PosRight THEN
+          PosRight -=1                                   !is ^ in "PRE(  ^)"
+          OutLength   = PosRight - PosLeft + 1
+          OutLeftPos  = PosLeft
+          OutRightPos = PosRight
+       END
+    END
+    IF ~OMITTED(OutBetweenStr) THEN 
+        OutBetweenStr=CHOOSE(OutLength<1,'',SearchTxt[PosLeft : PosRight])
+    END
+    RETURN OutLength
 !====================================================
 No1310 PROCEDURE(STRING Txt)
 N USHORT,AUTO
@@ -1141,6 +1874,26 @@ U USHORT
         IF U<N THEN Txt[U]=Txt[N].
     END
     RETURN SUB(Txt,1,U)
+!================================
+Picture_N_Width  PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture )!,SHORT,PROC 
+PicWidth SHORT,AUTO
+IntegerDigits SHORT,AUTO
+    CODE
+    IntegerDigits = pDigitsTotal - pDecimals 
+    PicWidth = IntegerDigits    
+    IF pCommas   THEN PicWidth += INT( (IntegerDigits-1)/3 ).
+    IF pMinus    THEN PicWidth += 1.
+    IF pDecimals THEN PicWidth += (1 + pDecimals).  ! 1+ Room for Decimal point
+    OutPicture='n' & |                                       !@n
+                CHOOSE(~pMinus, '','-') & |                  !  - 
+                CHOOSE(~pCommas,'_','') & |                  !   _
+                PicWidth                & |                  !    12
+                CHOOSE(~pDecimals,'','.' & pDecimals ) & |   !      .2
+                pBlankB                                      !        b
+!  DB('Picture_N_Width pDigitsTotal=' & pDigitsTotal &' IntegerDigits=' & IntegerDigits &' pDecimals=' & pDecimals & |
+!        ' pMinus='& pMinus &' pCommas='& pCommas  &' pBlankB='& pBlankB  &' PicWidth='& PicWidth &'  Out=' & OutPicture )
+
+    RETURN PicWidth                
 !====================================================
 PreviewList  PROCEDURE(STRING pListFormat)
 Fmt:Format  STRING(4000) 
@@ -1241,7 +1994,7 @@ FontPU BYTE,AUTO
     OF 6 TO 12 ; FontPU = PopNo-5 ; DO FontRtn           ! #6 Select Font...  #12 Segoe UI 10  => 1 to 7
     END !CASE Popup
    
-FontRtn ROUTINE
+FontRtn ROUTINE     !TODO is this finished ?
     DATA
 FFace   STRING(32)  ![ ] TODO keep STATIC Font to use on next Preview
 FSize   LONG
