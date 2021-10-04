@@ -71,3 +71,15 @@ Below shows comparing the Format split into lines and it becomes more clean some
 Comparing the Explain Tab that also includes the #Fields() makes it clear State and Zip were moved out of one group and into another.
 
 ![compare3](images/compare3.png)
+
+### FORMAT() String Generation from Queue or File -- New October 2021
+
+A LIST FORMAT string can be a tedious thing to make using the IDE List Box Foratter. Each Column requires filling in several entires, check boxes, drop lists, etc on the Property sheet. The new "Queue 2 Format" tab lets you paste in a Queue or File and then build you a pretty good Format string. It also builds a #FIELDS() list for use in the Browse Template. You can Preview the LIST to see how the Format looks.
+
+At the top of the tab List Format Preferences lets you customize many things. On each Field you can append a !@ comment to override the picture. You can also add !Omit to leave out a Field or !Hide to give it zero width. Right-Click on the Fields List on the lower-right for more options e.g. moving fields in the list.
+
+![Que2FmtDirQ](images/format_qgen_dirq.png)
+
+Paste in a FILE structure and the FORMAT() and #FIELDS() are made for the Browse Template.
+
+![Que2FmtFILE](images/format_qgen_file1.png)
