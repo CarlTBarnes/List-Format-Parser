@@ -276,11 +276,13 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         '55@/20L(2)|_FM~    FORMAT    (Double-Click on a Line to Reload)~@s255@]|F')
             END
             TAB(' LIST &Help '),USE(?TabHelp),TIP('List Format and Modifiers Help')
-                PROMPT('Group: [Cells] (GroupSize) Modifiers ~GroupHead~Justification(IndentHead)'), |
-                        AT(9,22),USE(?HelpSyntaxGroup),FONT('Consolas',9)
-                PROMPT('Cell:  Width Justification LRCD (Indent) Modifiers ~CellHead~ Justify(Indent' & |
-                        'Head) @picture@'),AT(9,32),USE(?HelpSyntaxCell),FONT('Consolas',9)
-                TEXT,AT(10,48,489,64),USE(HelpSyntax),SKIP,VSCROLL,FONT('Consolas',9),READONLY
+                PROMPT(' Group: [Cells] (GroupSize) Modifiers ~GroupHead~Justification(IndentHead) '), |
+                        AT(10,22,489,10),USE(?HelpSyntaxGroup),FONT('Consolas',9,COLOR:Black), |
+                        COLOR(COLOR:White)
+                PROMPT(' Cell:  Width Justification LRCD (Indent) Modifiers ~CellHead~ Justify(Inden' & |
+                        'tHead) @picture@ '),AT(10,32,489,10),USE(?HelpSyntaxCell),FONT('Consolas', |
+                        9,COLOR:Black),COLOR(COLOR:White)
+                TEXT,AT(10,49,489,64),USE(HelpSyntax),SKIP,VSCROLL,FONT('Consolas',9),READONLY
                 LIST,AT(10,118,310),FULL,USE(?List:ModifierQ),VSCROLL,FROM(ModifierQ),FORMAT('22L(3)' & |
                         '|M~Mod~C(0)@s4@Z(1)71L(3)|M~PROPLIST:~L(2)@s100@Z(2)29L(3)|M~Type~C(0)@s5@1' & |
                         '49L(3)~Modifier Description (click to sort)~L(2)@s60@'),ALRT(CtrlC), |
