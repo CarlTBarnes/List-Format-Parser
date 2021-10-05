@@ -11,6 +11,7 @@
 ! 25-Sep-2021  Auto Generate Format checkbox, 1 column / line checkbox
 ! 28-Sep-2021  Generate Format from Queue
 ! 03-Oct-2021  Generate Format from Queue allow FILE for making Browse Template Format
+! 04-Oct-2021  List Help tab improvements. Add TYPE column. Add separate Header alignment lines ~L ~C ~R ~D ~()
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -220,7 +221,8 @@ Tabs1Line       BOOL
                CASE ?List:ModifierQ{PROPList:MouseDownField} !FYI PROPLIST:SortColumn is the current Sort not the new one
                OF 1 ; SORT(ModifierQ,ModQ:Sort)  ; ?{PROPLIST:Locator,1}=1
                OF 2 ; SORT(ModifierQ,ModQ:Prop)  ; ?{PROPLIST:Locator,1}=2
-               OF 3 ; SORT(ModifierQ,ModQ:Name)  ; ?{PROPLIST:Locator,3}=1
+               OF 3 ; SORT(ModifierQ,ModQ:Type,ModQ:Prop)  ; ?{PROPLIST:Locator,1}=3
+               OF 4 ; SORT(ModifierQ,ModQ:Name)  ; ?{PROPLIST:Locator,3}=1
                END
                GET(ModifierQ, ModQ:Sort) 
                ?List:ModifierQ{PROP:Selected}=POINTER(ModifierQ) 
@@ -793,19 +795,34 @@ HelpCls.Init   PROCEDURE()
     CODE !( _Char,  _Name,  _Prop,  _Desc) 
     ?ModHelpBtn{PROP:Tip}=ModifierHelp
     ?ModHelp2Btn{PROP:Tip}=ModifierHelp
-    SELF.Add1Q('L'  ,'PROPLIST:Left :HeaderLeft'        ,'Justification Left of Data or Heading'     ,'Left alignment of column data, or heading text. This may be offset by an (Indent).')
-    SELF.Add1Q('R'  ,'PROPLIST:Right :HeaderRight'      ,'Justification Right of Data or Heading'    ,'Right alignment of column data, or heading text. This may be offset by an (Indent).')
-    SELF.Add1Q('C'  ,'PROPLIST:Center  :HeaderCenter'   ,'Justification Center of Data or Heading'   ,'Center alignment of column data, or heading text. This may be offset by an (Indent).')
-    SELF.Add1Q('D'  ,'PROPLIST:Decimal :HeaderDecimal'  ,'Justification Decimal of Data or Heading'  ,'Decimal alignment of column data, or heading text. The offset to the decimal point is specified with an (Indent).')
-    SELF.Add1Q('0-9','PROPLIST:Width'       ,'Width DLUs of Cell or Group in Digits','Numbers in the FORMAT string outside delimiters ()~~@@## denote column width. Numbers are the delimiter that marks the beginning of a new column, as well as a "[" to mark the start of a Group.')
-    SELF.Add1Q('()' ,'PROPLIST:LeftOffset :RightOffset :CenterOffset :DecimalOffset' ,'Indent of Column or Heading from Justification', |
+!    SELF.Add1Q('L'  ,'Align','PROPLIST:Left :HeaderLeft'        ,'Justification Left of Data or Heading'     ,'Left alignment of column data, or heading text. This may be offset by an (Indent).')
+!    SELF.Add1Q('R'  ,'Align','PROPLIST:Right :HeaderRight'      ,'Justification Right of Data or Heading'    ,'Right alignment of column data, or heading text. This may be offset by an (Indent).')
+!    SELF.Add1Q('C'  ,'Align','PROPLIST:Center  :HeaderCenter'   ,'Justification Center of Data or Heading'   ,'Center alignment of column data, or heading text. This may be offset by an (Indent).')
+!    SELF.Add1Q('D'  ,'Align','PROPLIST:Decimal :HeaderDecimal'  ,'Justification Decimal of Data or Heading'  ,'Decimal alignment of column data, or heading text. The offset to the decimal point is specified with an (Indent).')
+
+    SELF.Add1Q('L'  ,'Align','PROPLIST:Left   ','Justification Left of Data'      ,'Left alignment of column Data. This may be offset by an (Indent).')
+    SELF.Add1Q('R'  ,'Align','PROPLIST:Right  ','Justification Right of Data'    ,'Right alignment of column Data. This may be offset by an (Indent).')
+    SELF.Add1Q('C'  ,'Align','PROPLIST:Center ','Justification Center of Data'  ,'Center alignment of column Data. This may be offset by an (Indent).')
+    SELF.Add1Q('D'  ,'Align','PROPLIST:Decimal','Justification Decimal of Data','Decimal alignment of column Data. The offset to the decimal point is specified with an (Indent).')
+
+    SELF.Add1Q('~L'  ,'Head' ,'PROPLIST:HeaderLeft'     ,'Justification Left of Heading'      ,'Left alignment of Heading text. This may be offset by an (Indent).'&      ' Appears in Format after ~Header Text~L(#). May be omitted if matches Data alignment and indent.')
+    SELF.Add1Q('~R'  ,'Head' ,'PROPLIST:HeaderRight'    ,'Justification Right of Heading'    ,'Right alignment of Heading text. This may be offset by an (Indent).'&      ' Appears in Format after ~Header Text~R(#). May be omitted if matches Data alignment and indent.')
+    SELF.Add1Q('~C'  ,'Head' ,'PROPLIST:HeaderCenter'   ,'Justification Center of Heading'  ,'Center alignment of Heading text. This may be offset by an (Indent).'&      ' Appears in Format after ~Header Text~C(#). May be omitted if matches Data alignment and indent.')
+    SELF.Add1Q('~D'  ,'Head' ,'PROPLIST:HeaderDecimal'  ,'Justification Decimal of Heading','Decimal alignment of Heading text. Decimal point may be offset by an (Indent). Appears in Format after ~Header Text~D(#). May be omitted if matches Data alignment and indent.')
+
+    SELF.Add1Q('~()' ,'Head','PROPLIST:HeaderLeftOffset :HeaderRightOffset :HeaderCenterOffset :HeaderDecimalOffset of [Group]' ,'Heading Indent from Justification', |
+        'An optional (Indent) integer, enclosed in parentheses, that specifies in DLUs the indent from the justification. This may be negative. With Left justification indent defines a left margin ; with Right or Decimal, it defines a right margin; and with Center it defines an offset from the center of the field (negative = left offset).' & |
+        ' Header Offset is specified after ~Heading~ and Alignment LRCD as (Offset).  May be omitted if matches Data alignment and indent.')    
+
+    SELF.Add1Q('0-9','Align','PROPLIST:Width'       ,'Width DLUs of Cell or Group in Digits','Numbers in the FORMAT string outside delimiters ()~~@@## denote column width. Numbers are the delimiter that marks the beginning of a new column, as well as a "[" to mark the start of a Group.')
+    SELF.Add1Q('()' ,'Align','PROPLIST:LeftOffset :RightOffset :CenterOffset :DecimalOffset' ,'Indent of Column Data from Justification', |
         'An optional (Indent) integer, enclosed in (parentheses), that specifies in DLUs the indent from the justification LRCD. This may be negative. With Left justification indent defines a left margin ; with Right or Decimal, it defines a right margin; and with Center it defines an offset from the center of the field (negative = left offset).')
-    SELF.Add1Q('*'  ,'PROPLIST:Color'       ,'Color of Cell  in Queue as 4x LONG'   ,'An asterisk "*" indicates color information a cell is contained in 4 LONG fields after the data field in the QUEUE. The four colors are Foreground, Background, Selected Foreground, and Selected Background (in that order in the queue).')
-    SELF.Add1Q('B()','PROPLIST:BarFrame'    ,'Color of Selection Bar Frame'         ,'A "B(color)" specifies the color of the selection bar frame.')
-    SELF.Add1Q('E()','PROPLIST:TextColor :BackColor :TextSelected :BackSelected','Color of Column and Cell Default','' & |
+    SELF.Add1Q('*'  ,'Color','PROPLIST:Color'       ,'Color of Cell  in Queue as 4x LONG'   ,'An asterisk "*" indicates color information a cell is contained in 4 LONG fields after the data field in the QUEUE. The four colors are Foreground, Background, Selected Foreground, and Selected Background (in that order in the queue).')
+    SELF.Add1Q('B()','Color','PROPLIST:BarFrame'    ,'Color of Selection Bar Frame'         ,'A "B(color)" specifies the color of the selection bar frame.')
+    SELF.Add1Q('E()','Color','PROPLIST:TextColor :BackColor :TextSelected :BackSelected','Color of Column and Cell Default','' & |
                                             'An "E(f,b,sf,sb)" specifies the column default colors (foreground, background, selected foreground, selected background). If the column also includes the * modifier the default colors are used for an cell when the Queue specifies COLOR:None.' & |
                                             '<13,10,13,10>The default column colors can be set or changed using the properties: PROPLIST:TextColor, PROPLIST:BackColor, PROPLIST:TextSelected and PROPLIST:BackSelected.')
-    SELF.Add1Q('I'  ,'PROPLIST:Icon'        ,'Icon of Cell from Queue','' & |
+    SELF.Add1Q('I'  ,'Icon','PROPLIST:Icon'        ,'Icon of Cell from Queue','' & |
                                              '"I" indicates an icon displays in the column, at the left edge of the column (prepended ' &|
                                              'to the data). An icon number is contained in a LONG after the data field in the QUEUE ' &|
                                              'that contains a number that refers to the list of icons set with {{PROP:IconList,#}=''~icon.ico'' runtime property.' &|
@@ -813,8 +830,8 @@ HelpCls.Init   PROCEDURE()
                                              '<13,10>To display the icon only, and not the contents of the data field, make the display picture @P_PB.' &|
                                              '<13,10>' &|
                                              '<13,10>To detect a click on the icon check for PROPLIST:MouseDownZone = LISTZONE:Icon.')  ! Length = 462    
-    SELF.Add1Q('J'  ,'PROPLIST:IconTrn'     ,'Icon (transparent) of Cell from Queue','A "J" indicates a transparent icon displays in the column. The same information for "I" applies to "J".')
-    SELF.Add1Q('T()','PROPLIST:Tree'        ,'Tree Control','' & | 
+    SELF.Add1Q('J'  ,'Icon','PROPLIST:IconTrn'     ,'Icon (transparent) of Cell from Queue','A "J" indicates a transparent icon displays in the column. The same information for "I" applies to "J".')
+    SELF.Add1Q('T()','Tree','PROPLIST:Tree'        ,'Tree Control  (1)(B)(L)(I)(R)','' & | 
                                              '"T()" indicates the LIST is a tree control. The tree level is contained in a LONG field ' &|
                                              'after the data field in the QUEUE. The expanded/contracted state of the tree level is ' &|
                                              'determined by the sign of the tree level LONG field''s value (positive value=expanded ' &|
@@ -827,11 +844,11 @@ HelpCls.Init   PROCEDURE()
                                              '<13,10>T(L) PROPLIST:TreeLines to suppress the connecting lines between all levels' &|
                                              '<13,10>T(I) PROPLIST:TreeIndent to suppress level indentation (also implicitly suppresses both Boxes and Lines)' &|
                                              '<13,10>T(R) PROPLIST:TreeRoot to suppress the connecting lines to the root level')  ! Length = 770    
-    SELF.Add1Q('Y'  ,'PROPLIST:CellStyle'   ,'Style of Cell in Queue as LONG'   ,'"Y" indicates a Style Number for the cell is contained in a LONG field after the data field in the QUEUE. The Style Number LONG refers to an entry in an array of styles associated with the LIST control defined through the {{PROPSTYLE:xxxx, Number} runtime properties. This overrides a Z() column default style.')
-    SELF.Add1Q('Z()','PROPLIST:ColStyle'    ,'Style default of Column in Format as (number)','"Z" followed by a Style number in (parens) sets the default style for an entire column.<13,10>Overriden by a "Y" Cell Style in the Queue (PROPLIST:CellStyle).<13,10>See PROPSTYLE: for more details.')
-    SELF.Add1Q('~~' ,'PROPLIST:Header'      ,'Heading of Column ~Header~Justification(Indent)','A string enclosed in ~tildes~  displays the header at the top of the list. The header displays with the same alignment as the field data unless the tilde is followed by a header justification parameter LRCD (PROPLIST:HeaderLeft, :HeaderRight, :HeaderCenter, :HeaderDecimal) and/or indent value in (parentheses).')
-    SELF.Add1Q('@@' ,'PROPLIST:Picture'     ,'Picture Format for Data as @picture@','The picture formats the field for display. The trailing @ is required to define the end of the picture, so that display pictures such as @N12~Kr~ can be used in the format string without creating ambiguity.')
-    SELF.Add1Q('?'  ,'PROPLIST:Locator'     ,'Locator Column'                   ,'' & |  
+    SELF.Add1Q('Y'  ,'Style','PROPLIST:CellStyle'   ,'Style of Cell in Queue as LONG'   ,'"Y" indicates a Style Number for the cell is contained in a LONG field after the data field in the QUEUE. The Style Number LONG refers to an entry in an array of styles associated with the LIST control defined through the {{PROPSTYLE:xxxx, Number} runtime properties. This overrides a Z() column default style.')
+    SELF.Add1Q('Z()','Style','PROPLIST:ColStyle'    ,'Style default of Column in Format as (number)','"Z" followed by a Style number in (parens) sets the default style for an entire column.<13,10>Overriden by a "Y" Cell Style in the Queue (PROPLIST:CellStyle).<13,10>See PROPSTYLE: for more details.')
+    SELF.Add1Q('~~' ,'Head' ,'PROPLIST:Header'      ,'Heading of Column ~Header~Justification(Indent)','A string enclosed in ~tildes~  displays the header at the top of the list. The header displays with the same alignment as the field data unless the tilde is followed by a header justification parameter LRCD (PROPLIST:HeaderLeft, :HeaderRight, :HeaderCenter, :HeaderDecimal) and/or indent value in (parentheses).')
+    SELF.Add1Q('@@' ,'Data' ,'PROPLIST:Picture'     ,'Picture Format for Data as @picture@','The picture formats the field for display. The trailing @ is required to define the end of the picture, so that display pictures such as @N12~Kr~ can be used in the format string without creating ambiguity.')
+    SELF.Add1Q('?'  ,'Flag' ,'PROPLIST:Locator'     ,'Locator Column'                   ,'' & |  
                                              'A question mark "?" defines the locator field for a COMBO or LIST box with a selector ' &|
                                              'field. For a drop-down multi-column list box, this is the value displayed in the current-selec' &|
                                              'tion box. Only one column can have the locator (?) modifier. If no column has the locator ' &|
@@ -845,33 +862,33 @@ HelpCls.Init   PROCEDURE()
                                              '<13,10>3. The value of the locator column of the current COMBO''s record is displayed ' &|
                                              'in the entry sub-control.')  ! Length = 719
                                              
-    SELF.Add1Q('_'  ,'PROPLIST:Underline'   ,'Line Under Cell'                  ,'An underscore "_" underlines the field.')
-    SELF.Add1Q('/'  ,'PROPLIST:LastOnLine'  ,'Last Column on Line for Group'    ,'A slash "/" causes the next field to appear on a new line. Only used on a field in a Group [].')
-    SELF.Add1Q('|'  ,'PROPLIST:RightBorder' ,'Line on Right Side of Cell'       ,'A pipe "|" places a vertical line to the right of the field.')
-    SELF.Add1Q('M'  ,'PROPLIST:Resize'      ,'Resizable Cell or Group'          ,'An "M" allows the column or group to be re-sized at runtime. This allows the user to drag the right vertical bar (if present) or right edge of the data area.')
-    SELF.Add1Q('F'  ,'PROPLIST:Fixed'       ,'Fixed Column does not Scroll'     ,'An "F" creates a fixed column that stays on screen when the user horizontally pages through the fields (by the HSCROLL attribute). Fixed fields or groups must be at the start of the list. This is ignored if placed on a field within a group.')
-    SELF.Add1Q('S()','PROPLIST:Scroll'      ,'Scroll bar on Column or Group'    ,'An S(integer) adds a scroll bar to the field or group. The integer defines the total dialog units to scroll. Ignored if field in group.')
-    SELF.Add1Q('P'  ,'PROPLIST:Tip'         ,'Tool Tip for Cell in Queue as STRING' ,'A "P" adds a column tool tip. The tip text is in the next QUEUE field that follows the QUEUE data field. If the designated queue field is empty, the "Q" modifier designates a string value to use as a default tool tip.')
-  SELF.Add1Q('Q''''','PROPLIST:DefaultTip'  ,'Tool Tip Column Default as ''String'' in FORMAT','A "Q" followed by a ''''string'''' designates the default column tip text. If "P" Column Tip is also specified the default tip shows when the Queue tip field is blank. Default tips can my the Format() unruly long so are best assigned at runtime.')
-    SELF.Add1Q('#'  ,'PROPLIST:FieldNo'     ,'Field Number from Queue as #number#','A #number# enclosed in pound signs indicates the QUEUE field to display. Following fields in the format string without an explicit #number# are taken in order from the fields following the #number# field. For example, #2# on the first field in the format string indicates starting with the second field in the QUEUE, skipping the first. If the number of fields specified in the format string are >= the number of fields in the QUEUE, the format "wraps around" to the start of the QUEUE.')
+    SELF.Add1Q('_'  ,'Flag','PROPLIST:Underline'   ,'Line Under Cell'                  ,'An underscore "_" underlines the field.')
+    SELF.Add1Q('/'  ,'Flag','PROPLIST:LastOnLine'  ,'Last Column on Line for Group'    ,'A slash "/" causes the next field to appear on a new line. Only used on a field in a Group [].')
+    SELF.Add1Q('|'  ,'Flag','PROPLIST:RightBorder' ,'Line on Right Side of Cell'       ,'A pipe "|" places a vertical line to the right of the field.')
+    SELF.Add1Q('M'  ,'Flag','PROPLIST:Resize'      ,'Resizable Cell or Group'          ,'An "M" allows the column or group to be re-sized at runtime. This allows the user to drag the right vertical bar (if present) or right edge of the data area.')
+    SELF.Add1Q('F'  ,'Flag','PROPLIST:Fixed'       ,'Fixed Column does not Scroll'     ,'An "F" creates a fixed column that stays on screen when the user horizontally pages through the fields (by the HSCROLL attribute). Fixed fields or groups must be at the start of the list. This is ignored if placed on a field within a group.')
+    SELF.Add1Q('S()','Data' ,'PROPLIST:Scroll'      ,'Scroll bar on Column or Group'    ,'An S(integer) adds a scroll bar to the field or group. The (integer) defines the total dialog units to scroll. Ignored if field in group.')
+    SELF.Add1Q('P'  ,'Tip'  ,'PROPLIST:Tip'         ,'Tool Tip for Cell in Queue as STRING' ,'A "P" adds a column tool tip. The tip text is in the next QUEUE field that follows the QUEUE data field. If the designated queue field is empty, the "Q" modifier designates a string value to use as a default tool tip.')
+  SELF.Add1Q('Q''''','Tip'  ,'PROPLIST:DefaultTip'  ,'Tool Tip Column Default as ''String'' in FORMAT','A "Q" followed by a ''''string'''' designates the default column tip text. If "P" Column Tip is also specified the default tip shows when the Queue tip field is blank. Default tips can my the Format() unruly long so are best assigned at runtime.')
+    SELF.Add1Q('#'  ,'Data' ,'PROPLIST:FieldNo'     ,'Field Number from Queue as #number#','A #number# enclosed in pound signs indicates the QUEUE field to display. Following fields in the format string without an explicit #number# are taken in order from the fields following the #number# field. For example, #2# on the first field in the format string indicates starting with the second field in the QUEUE, skipping the first. If the number of fields specified in the format string are >= the number of fields in the QUEUE, the format "wraps around" to the start of the QUEUE.')
 
-    SELF.Add1Q('[]' ,'PROPLIST:Group + '    ,'Group Columns '                     ,'"[]" indicate multiple columns grouped. A group may specify header text after the ending "]" using the syntax: ~header text~ Justification LRCD (Indent).' & |
+    SELF.Add1Q('[]' ,'Group','PROPLIST:Group + '    ,'Group Columns '                     ,'"[]" indicate multiple columns grouped. A group may specify header text after the ending "]" using the syntax: ~header text~ Justification LRCD (Indent).' & |
         '<13,10><13,10>{{PROPLIST:GroupNo,Column} returns the group number of a column.' & |
         '<13,10><13,10>{{PROPLIST:GroupNo + PROPLIST:Group,Column} returns the number of columns in the group or zero if not a group.<13,10>')
-    SELF.Add1Q('[]()' ,'PROPLIST:Width of [Group]' ,'Group Width', |
+    SELF.Add1Q('[]()' ,'Group','PROPLIST:Width of [Group]' ,'Group Width', |
         'An optional (Group Width) integer, enclosed in parentheses after the group closing square bracket, that specifies the width of the group (PROPLIST:Group + PROPLIST:Width). If omitted, the size is calculated from the enclosed fields.')    
 
-    SELF.Add1Q(']~ ~' ,'PROPLIST:Header of [Group]' ,'Group Heading Text', |
+    SELF.Add1Q(']~ ~' ,'Group','PROPLIST:Header of [Group]' ,'Group Heading Text', |
         'A string enclosed in ~tildes~  displays the header at the top of the Group. Heading is specified after [](width). Alignment may be specified after the second tilde as a header justification parameter LRCD and (Indent).')    
 
-!    SELF.Add1Q('~~' ,'PROPLIST:Header'      ,'Heading of Column ~Header~Justification(Indent)','A string enclosed in ~tildes~  displays the header at the top of the list. The header displays with the same alignment as the field data unless the tilde is followed by a header justification parameter LRCD (PROPLIST:HeaderLeft, :HeaderRight, :HeaderCenter, :HeaderDecimal) and/or indent value in (parentheses).')
+!    SELF.Add1Q('~~' ,'tttt','PROPLIST:Header'      ,'Heading of Column ~Header~Justification(Indent)','A string enclosed in ~tildes~  displays the header at the top of the list. The header displays with the same alignment as the field data unless the tilde is followed by a header justification parameter LRCD (PROPLIST:HeaderLeft, :HeaderRight, :HeaderCenter, :HeaderDecimal) and/or indent value in (parentheses).')
     
-    SELF.Add1Q(']~()' ,'PROPLIST:HeaderLeftOffset :HeaderRightOffset :HeaderCenterOffset :HeaderDecimalOffset of [Group]' ,'Group Heading Indent from Justification', |
+    SELF.Add1Q(']~()' ,'Group','PROPLIST:HeaderLeftOffset :HeaderRightOffset :HeaderCenterOffset :HeaderDecimalOffset of [Group]' ,'Group Heading Indent from Justification', |
         'An optional (Indent) integer, enclosed in parentheses, that specifies in DLUs the indent from the justification. This may be negative. With Left justification indent defines a left margin ; with Right or Decimal, it defines a right margin; and with Center it defines an offset from the center of the field (negative = left offset).' & |
         ' Group Header Offset is specified after []~Heading~ and Alignment LRCD e.g. [field-columns](group width)~Group Head~L(offset).')    
 
-    SELF.Add1Q('HB()' ,'PROPLIST:HdrBackColor','Color of Header Background'     ,'An "HB(color)" specifies the column header background color.')
-    SELF.Add1Q('HT()' ,'PROPLIST:HdrTextColor','Color of Header Text'           ,'An "HT(color)" specifies the column header text color. Confused by the templates as a Tree so best to assign at runtime.')
+    SELF.Add1Q('HB()' ,'Head','PROPLIST:HdrBackColor','Color of Header Background'     ,'An "HB(color)" specifies the column header background color.')
+    SELF.Add1Q('HT()' ,'Head','PROPLIST:HdrTextColor','Color of Header Text'           ,'An "HT(color)" specifies the column header text color. Confused by the templates as a Tree so best to assign at runtime.')
 !    SELF.Add1Q('','prop','','')
 
 !TODO add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree) from the See ListBoxFormatterPRJ.PNG so can sort by Cat? Must be Wider
@@ -883,12 +900,13 @@ HelpCls.Init   PROCEDURE()
     GET(ModifierQ, 1) ; ?List:ModifierQ{PROP:Selected}=1
     SELF.Init2() 
     RETURN 
-HelpCls.Add1Q   PROCEDURE(STRING _Char, STRING _Prop, STRING _Name, STRING _Desc)  
+HelpCls.Add1Q   PROCEDURE(STRING _Char, STRING _Type, STRING _Prop, STRING _Name, STRING _Desc)  
 P4D     STRING(128),AUTO
 Cln     LONG,AUTO
     CODE
     ModQ:Char = _Char
     ModQ:Name = _Name
+    ModQ:Type = _Type
     ModQ:Prop = _Prop ; IF ModQ:Prop[1:8]='PROPLIST' THEN ModQ:Prop=SUB(ModQ:Prop,10,99).
     ModQ:Desc = _Desc  
     ModQ:Sort = LOWER(ModQ:Char) & FORMAT(RECORDS(ModifierQ)+1,@n02)   

@@ -81,7 +81,7 @@ ListControl     LIKE(ListControl)       !HisQ:ListControl
 HelpCls CLASS
 Init        PROCEDURE()
 Init2       PROCEDURE()
-Add1Q       PROCEDURE(STRING _Char, STRING _Prop, STRING _Name, STRING _Desc)
+Add1Q       PROCEDURE(STRING _Char, STRING _Type, STRING _Prop, STRING _Name, STRING _Desc)
 Set1QDesc   PROCEDURE(STRING _Char, STRING _Desc)
         END
 HelpSyntax      STRING(2000)
@@ -90,6 +90,7 @@ HelpModOrder    STRING(1600)
 ModifierQ   QUEUE,PRE(ModQ)     !LIST Modifiers
 Char            STRING(4)       !ModQ:Char
 Prop            STRING(100)     !ModQ:Prop      !w/o PROPLIST:
+Type            STRING(5)       !ModQ:Type (Category) Align Data Head Group Color Tree Style
 Name            STRING(60)      !ModQ:Name
 PropFull        STRING(60)      !ModQ:PropFull  !with PROPLIST:
 Desc            STRING(1024)    !ModQ:Desc
@@ -206,7 +207,7 @@ eOmit_Hide EQUATE('Hide')
 eOmit_NA_  EQUATE('N/A')
 !EndRegion -- Data for Generate Format
                     
-Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRAY,SYSTEM,MAX, |
+Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRAY,SYSTEM,MAX, |
             ICON('LFmtIcon.ico'),FONT('Segoe UI',8),RESIZE
         SHEET,AT(6,2),FULL,USE(?Sheet1),JOIN
             TAB(' L&IST Code... '),USE(?TabInput)
@@ -279,12 +280,13 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                         AT(9,22),USE(?HelpSyntaxGroup),FONT('Consolas',9)
                 PROMPT('Cell:  Width Justification LRCD (Indent) Modifiers ~CellHead~ Justify(Indent' & |
                         'Head) @picture@'),AT(9,32),USE(?HelpSyntaxCell),FONT('Consolas',9)
-                TEXT,AT(10,48,454,64),USE(HelpSyntax),SKIP,VSCROLL,FONT('Consolas',9),READONLY
-                LIST,AT(10,118,275),FULL,USE(?List:ModifierQ),VSCROLL,FROM(ModifierQ),FORMAT('21L(2)' & |
-                        '|M~Mod~C(0)@s4@Z(1)70L(2)|M~PROPLIST:~@s100@Z(2)149L(2)~Modifier Descriptio' & |
-                        'n (click to sort)~@s60@'),ALRT(CtrlC), ALRT(CtrlShiftC)
-                TEXT,AT(293,118,171,150),USE(ModQ:Desc),VSCROLL,FONT('Consolas',9),READONLY
-                TEXT,AT(293,274),FULL,USE(HelpModOrder),SKIP,HVSCROLL,FONT('Consolas',9),READONLY
+                TEXT,AT(10,48,489,64),USE(HelpSyntax),SKIP,VSCROLL,FONT('Consolas',9),READONLY
+                LIST,AT(10,118,310),FULL,USE(?List:ModifierQ),VSCROLL,FROM(ModifierQ),FORMAT('22L(3)' & |
+                        '|M~Mod~C(0)@s4@Z(1)71L(3)|M~PROPLIST:~L(2)@s100@Z(2)29L(3)|M~Type~C(0)@s5@1' & |
+                        '49L(3)~Modifier Description (click to sort)~L(2)@s60@'),ALRT(CtrlC), |
+                         ALRT(CtrlShiftC)
+                TEXT,AT(328,118,171,150),USE(ModQ:Desc),VSCROLL,FONT('Consolas',9),READONLY
+                TEXT,AT(328,274),FULL,USE(HelpModOrder),SKIP,HVSCROLL,FONT('Consolas',9),READONLY
             END
             TAB('&Queue 2 Format'),USE(?TabGenQueue),TIP('Generate a Format from a Queue')
                 PROMPT('Queue Declaration<13,10>or File'),AT(10,206,66,20),USE(?GenQue_TextQ:Prompt)
@@ -418,8 +420,9 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,470,360),GRA
                         ,FONT(,10)
                 BUTTON('&ReRun'),AT(550,27,35,18),USE(?RunAgainGFQBtn),SKIP,TIP('Run Another Instance')
                 CHECK('Select This Tab at Open'),AT(550,77),USE(GenQue:SelectTabAtOpen)
-            END            
-            TAB('Simple Format Gen'),USE(?TabGenSimple),TIP('Generate a Simple Format with all columns the same')
+            END
+            TAB('Simple Format Gen'),USE(?TabGenSimple),TIP('Generate a Simple Format with all colum' & |
+                    'ns the same')
                 GROUP('List Format Specifications for All Columns'),AT(14,22,289,110),USE(?GemSim_Group), |
                         BOXED
                     PROMPT('&Width'),AT(21,40),USE(?GenSim:Width:Pmt)
