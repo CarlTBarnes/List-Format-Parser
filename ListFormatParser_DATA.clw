@@ -459,7 +459,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                             's requires 1 LONG in Queue<13,10>Column Style Z(#) is only in Format.')
                     CHECK('Field Number #'),AT(218,101),USE(GenSim:FieldNumbered),TIP('Add # Field N' & |
                             'o # to all columns')
-                    CHECK('1 Column / Line'),AT(316,164,68),USE(GenSim:OnePerLine),SKIP,LEFT, |
+                    CHECK('1 Column / Line'),AT(283,164,68),USE(GenSim:OnePerLine),SKIP,LEFT, |
                             TIP('One Column Per Line')
                     CHECK('Auto Generate'),AT(218,118),USE(GenSim:AutoGenerate),TIP('Generate Format' & |
                             ' on any chnage to format specs')
@@ -472,20 +472,20 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         TIP('Clear to Program Defaults')
                 PROMPT('Columns'),AT(14,140),USE(?GenSim:Columns:Pmt)
                 ENTRY(@n2),AT(15,152,,11),USE(GenSim:Columns)
-                BUTTON(' &Generate<13,10> Format'),AT(59,140,70,23),USE(?GenSimpleFormatBtn), |
+                BUTTON(' &Generate<13,10> Format'),AT(56,140,70,23),USE(?GenSimpleFormatBtn), |
                         ICON('LFmtIcon.ico'),TIP('Generate format using above parameters'),LEFT
-                BUTTON('Pre&view<13,10>Format'),AT(148,140,66,23),USE(?GenSimplePreviewBtn),SKIP, |
+                BUTTON('Pre&view<13,10>Format'),AT(136,140,66,23),USE(?GenSimplePreviewBtn),SKIP, |
                         ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
-                BUTTON('&Parse<13,10>Format'),AT(228,140,64,23),USE(?GenSimpleParseBtn),ICON(ICON:VCRplay), |
+                BUTTON('&Parse<13,10>Format'),AT(212,140,64,23),USE(?GenSimpleParseBtn),ICON(ICON:VCRplay), |
                         TIP('Put Format into "LIST Code" tab then parse Columns to "FORMAT Lines" tab'), |
                         LEFT
-                STRING('FORMAT'),AT(389,196,14,45),USE(?FormatLit),FONT(,12),ANGLE(2700)
-                TEXT,AT(42,178,342,76),USE(GenSim_Format),SKIP,VSCROLL,FONT('Consolas',9)
-                STRING('FIELDS'),AT(389,261,14,45),USE(?FieldsLit),FONT(,12),ANGLE(2700)
-                TEXT,AT(42,261,342,38),USE(GenSim_FIELDS),SKIP,VSCROLL,FONT('Consolas',9)
+                STRING('FORMAT'),AT(355,215,14,45),USE(?FormatLit),FONT(,12),ANGLE(2700)
+                TEXT,AT(42,178,308,119),USE(GenSim_Format),SKIP,VSCROLL,FONT('Consolas',9)
+                STRING('FIELDS'),AT(380,160),USE(?FieldsLit),FONT(,12)
+                TEXT,AT(381,178,308,119),USE(GenSim_FIELDS),SKIP,VSCROLL,FONT('Consolas',9)
                 BUTTON,AT(12,178,18,18),USE(?GenSimpleCopyFormatBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy Format to Clipboard')
-                BUTTON,AT(12,247,18,18),USE(?GenSimpleCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
+                BUTTON,AT(12,279,18,18),USE(?GenSimpleCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy Format and #Fields() to Clipboard')
                 PROMPT('"Simple Format" was <0DH,0AH>my first idea ...but...<0DH,0AH>"Queue 2 Format' & |
                         '" is <0DH,0AH>the tool to try first.'),AT(380,27,85,45),USE(?GenSimpleSeeQue2Fmt), |
