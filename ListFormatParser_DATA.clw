@@ -322,8 +322,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                     GROUP,AT(17,30,92,64),USE(?GQUprLeftGROUP)
                         PROMPT('Width'),AT(19,32),USE(?GenQue:WidthMin:Pmt)
                         ENTRY(@n3),AT(49,32,20,10),USE(GenQue:WidthMin),TIP('MINimum Width')
-                        PROMPT(' - '),AT(69,32),USE(?GenQue:WidthMax:Pmt)
-                        ENTRY(@n3),AT(79,32,20,10),USE(GenQue:WidthMax),TIP('MAXimum Width')
+                        PROMPT(' - '),AT(72,32),USE(?GenQue:WidthMax:Pmt)
+                        ENTRY(@n3),AT(81,32,20,10),USE(GenQue:WidthMax),TIP('MAXimum Width')
                         PROMPT('Date *'),AT(19,45),USE(?GenQue:Pic_Date:Pmt)
                         BUTTON('@'),AT(92,45,12,10),USE(?GenQue:Pic_Date:Popup),SKIP,FONT(,8), |
                                 TIP('Date Picker')

@@ -12,6 +12,7 @@
 ! 28-Sep-2021  Generate Format from Queue
 ! 03-Oct-2021  Generate Format from Queue allow FILE for making Browse Template Format
 ! 04-Oct-2021  List Help tab improvements. Add TYPE column. Add separate Header alignment lines ~L ~C ~R ~D ~()
+! 05-Oct-2021  Add Manifest
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -111,7 +112,9 @@ Tabs1Line       BOOL
     ?Sheet1{PROP:NoSheet}=1 ; ?Sheet1{PROP:Below}=1
     DO TabHideSyncRtn
     ?LIST:HistoryQ{PROP:LineHeight} = 2 + ?LIST:HistoryQ{PROP:LineHeight}
-    ?List:ModifierQ{PROPLIST:HasSortColumn}=1
+    ?List:ModifierQ{PROPLIST:HasSortColumn}=1 
+    ?LIST:ModifierQ{PROPLIST:Grid}=Color:Silver ; ?LIST:GQFieldsQ{PROPLIST:Grid}=Color:Silver
+    ?Sheet1{PROP:NoTheme}=1  !For Manifest
     HelpCls.Init()    
     IF GenQue:SelectTabAtOpen THEN SELECT(?TabGenQueue).
     ACCEPT   
