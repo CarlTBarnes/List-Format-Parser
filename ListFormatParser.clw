@@ -1114,7 +1114,7 @@ TipLong LONG
     InX=LEN(CLIP(Pic))
     IF Inx AND Pic[InX]='@' THEN Pic[InX]=''.   !he typed @n22@ with trailing @
     CASE DorT
-    OF 'D' ; IF ~Pic THEN Pic='d17'. ; TipLong=DATE(01,22,2033)          !; TipLong=TODAY()
+    OF 'D' ; IF ~Pic THEN Pic='d17'. ; TipLong=DATE(01,22,3333)          !; TipLong=TODAY()
     OF 'T' ; IF ~Pic THEN Pic='t7' . ; TipLong=DEFORMAT('01:23:45',@t4)  !; TipLong=CLOCK()
     END
     IF ~Pic THEN RETURN.
@@ -1128,7 +1128,7 @@ PPic PSTRING(20)
 PX SHORT,AUTO
 FmtLong LONG
 FmtStr  STRING(32),AUTO
-S2      &STRING
+S1      &STRING
 X       USHORT,AUTO
 PupTxt ANY
 PupNo  BYTE
@@ -1155,7 +1155,7 @@ TimeBlank PSTRING(2),STATIC
     END
     RETURN
 DateRtn ROUTINE
-    FmtLong=DATE(11,22,2033)
+    FmtLong=DATE(11,22,3333)
     PupTxt='Date Modifiers{{' & |
                'Leading{{Space|Zero}' & |
               '|Separator{{Slash <9>/|Period <9>.|Comma <9>,|Hyphen <9>-|Space <9>_}' & |
@@ -1184,12 +1184,13 @@ DateRtn ROUTINE
 
 mmddyyyyRtn ROUTINE
     LOOP X=1 TO LEN(CLIP(FmtStr))
-        S2 &= FmtStr[X : X+1]
-        CASE S2
-        OF '11' ; S2='mm'
-        OF '22' ; S2='dd'
-        OF '33' OROF '20' ; S2='yy'
-        OF 'NO' OROF 'No' ; FmtStr[X : X+2]='MMM'  !'NOV'
+        S1 &= FmtStr[X]
+        CASE S1
+        OF '1' ; S1='m'
+        OF '2' ; S1='d'
+        OF '3' ; S1='y'
+        OF 'A' TO 'Z' ; S1='M'  !'NOV'
+        OF 'a' TO 'z' ; S1='m'  !'Nov'
         END
    END
    EXIT
@@ -1218,12 +1219,12 @@ TimeRtn ROUTINE
     EXIT
 hhmmssRtn ROUTINE
     LOOP X=1 TO LEN(CLIP(FmtStr))
-        S2 &= FmtStr[X : X+1]
-        CASE S2
-        OF '11' ; S2='hh'
-        OF '22' ; S2='mm'
-        OF '33' ; S2='ss'
-        OF 'AM' ; S2='XM'
+        S1 &= FmtStr[X]
+        CASE S1
+        OF '1' ; S1='h'
+        OF '2' ; S1='m'
+        OF '3' ; S1='s'
+        OF 'A' ; S1='X'
         END
    END
    EXIT
