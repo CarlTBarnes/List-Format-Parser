@@ -196,7 +196,8 @@ Tabs1Line       BOOL
         OF ?GenQueueParseBtn   ; GenFmt.QueueParseBtn()
 
         OF ?GenQueueCopyFormatBtn  ; GenFmt.CopyFormatBtn(?GenQue_Format,0)    
-        OF ?GenQueueCopyFieldsBtn  ; GenFmt.CopyFormatBtn(?GenQue_Format,?GenQue_FIELDS)
+        OF ?GenQueueCopyFieldsBtn  ; GenFmt.CopyFormatBtn(0,?GenQue_FIELDS)
+        OF ?GenQueueCopyField2Btn  ; GenFmt.CopyFormatBtn(?GenQue_Format,?GenQue_FIELDS)
         OF ?GenQueueDefaultSaveBtn ; GenFmt.ConfigGetPut(2,'GenQueue',GenFmt_Queue)
         OF ?GenQueueDefaultLoadBtn ; GenFmt.QueueLoadConfig() ; DISPLAY
         OF ?GenQueueClearBtn       ; GenFmt_Queue=GenFmt_Queue_Defaults ; DISPLAY
