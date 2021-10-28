@@ -1189,8 +1189,10 @@ mmddyyyyRtn ROUTINE
         OF '1' ; S1='m'
         OF '2' ; S1='d'
         OF '3' ; S1='y'
-        OF 'A' TO 'Z' ; S1='M'  !'NOV'
-        OF 'a' TO 'z' ; S1='m'  !'Nov'
+        ELSE
+            IF    IsUPPER(S1) THEN S1='M'   !OF 'A' TO 'Z' ; S1='M'  !'NOV'
+            ELSIF IsLower(S1) THEN S1='m'   !OF 'a' TO 'z' ; S1='m'  !'Nov'
+            END
         END
    END
    EXIT
@@ -1224,7 +1226,7 @@ hhmmssRtn ROUTINE
         OF '1' ; S1='h'
         OF '2' ; S1='m'
         OF '3' ; S1='s'
-        OF 'A' ; S1='X'
+        OF 'A' ; S1='X' !AM/PM
         END
    END
    EXIT
