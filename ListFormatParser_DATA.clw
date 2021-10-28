@@ -322,8 +322,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                     GROUP,AT(17,30,92,64),USE(?GQUprLeftGROUP)
                         PROMPT('Width'),AT(19,32),USE(?GenQue:WidthMin:Pmt)
                         ENTRY(@n3),AT(49,32,20,10),USE(GenQue:WidthMin),TIP('MINimum Width')
-                        PROMPT(' - '),AT(69,32),USE(?GenQue:WidthMax:Pmt)
-                        ENTRY(@n3),AT(79,32,20,10),USE(GenQue:WidthMax),TIP('MAXimum Width')
+                        PROMPT(' - '),AT(72,32),USE(?GenQue:WidthMax:Pmt)
+                        ENTRY(@n3),AT(81,32,20,10),USE(GenQue:WidthMax),TIP('MAXimum Width')
                         PROMPT('Date *'),AT(19,45),USE(?GenQue:Pic_Date:Pmt)
                         BUTTON('@'),AT(92,45,12,10),USE(?GenQue:Pic_Date:Popup),SKIP,FONT(,8), |
                                 TIP('Date Picker')
@@ -380,13 +380,13 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                                 'Center the Heading  Text')
                         PROMPT('for Right Data'),AT(195,86),USE(?GenQue:HdrCenterDataRight:2),TRN
                     END
-                    CHECK('Right Line |'),AT(275,28),USE(GenQue:RightBorder)
-                    CHECK('Resizable M'),AT(275,38),USE(GenQue:Resize)
-                    CHECK('Fixed F'),AT(275,48),USE(GenQue:Fixed),TIP('Fixed No H Scroll Column')
-                    CHECK('Underline _'),AT(275,58),USE(GenQue:Underline)
-                    CHECK('Colored *'),AT(275,70),USE(GenQue:Colored),TIP('Color All Columns require' & |
+                    CHECK('Resizable M'),AT(275,27),USE(GenQue:Resize)
+                    CHECK('Right Line |'),AT(275,37),USE(GenQue:RightBorder)
+                    CHECK('Underline _'),AT(275,47),USE(GenQue:Underline)
+                    CHECK('Fixed F'),AT(275,57),USE(GenQue:Fixed),TIP('Fixed No H Scroll Column')
+                    CHECK('Colored *'),AT(275,69),USE(GenQue:Colored),TIP('Color All Columns require' & |
                             's 4 x LONG in Queue')
-                    CHECK('Style Cell Y'),AT(275,80),USE(GenQue:CellStyle),TIP('Cell Style for requi' & |
+                    CHECK('Style Cell Y'),AT(275,79),USE(GenQue:CellStyle),TIP('Cell Style for requi' & |
                             'res 1 x LONG in Queue<13,10>Column Style Z(#) is only specified in Format.')
                     CHECK('Field No. #'),AT(275,89),USE(GenQue:FieldNumbered),TIP('Add # Field No # ' & |
                             'to all columns')
@@ -403,7 +403,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         TIP('Clear to Program Defaults')
                 BUTTON(' &Generate<13,10> Format'),AT(52,105,66,23),USE(?GenQueueFormatBtn), |
                         ICON('LFmtIcon.ico'),TIP('Generate format using above parameters'),LEFT
-                BUTTON('Pre&view<13,10>Format'),AT(125,105,66,23),USE(?GenQueuePreviewBtn),SKIP, |
+                BUTTON('Pre&view<13,10>Format'),AT(125,105,66,23),USE(?GenQueuePreviewBtn), |
                         ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
                 BUTTON('Pa&rse<13,10>Format'),AT(197,105,66,23),USE(?GenQueueParseBtn),ICON(ICON:VCRplay), |
                         TIP('Put Format into "LIST Code" tab then parse Columns to "FORMAT Lines" tab'), |
@@ -414,11 +414,13 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 TEXT,AT(372,132,308,63),USE(GenQue_FIELDS),SKIP,VSCROLL,FONT('Consolas',9)
                 BUTTON,AT(12,132,18,18),USE(?GenQueueCopyFormatBtn),SKIP,ICON(ICON:Copy),TIP('Copy F' & |
                         'ORMAT() to Clipboard')
-                BUTTON,AT(12,178,18,18),USE(?GenQueueCopyFieldsBtn),SKIP,ICON(ICON:Copy),TIP('Copy F' & |
+                BUTTON,AT(12,178,18,18),USE(?GenQueueCopyField2Btn),SKIP,ICON(ICON:Copy),TIP('Copy F' & |
                         'ORMAT()<13,10>and #FIELDS() to Clipboard')
+                BUTTON,AT(420,110,18,18),USE(?GenQueueCopyFieldsBtn),SKIP,ICON(ICON:Copy),TIP('Copy ' & |
+                        '#FIELDS() to Clipboard')
                 PROMPT('What''s This:<13,10>Creating a new List Format for a Queue can be tedious ad' & |
                         'ding each column. This generates a FORMAT for your QUEUE definition you pas' & |
-                        'te into the Text control on the lower left.'),AT(420,27,110,90),USE(?GenQueueWhatsThis) |
+                        'te into the Text control on the lower left.'),AT(420,20,110,86),USE(?GenQueueWhatsThis) |
                         ,FONT(,10)
                 BUTTON('&ReRun'),AT(550,27,35,18),USE(?RunAgainGFQBtn),SKIP,TIP('Run Another Instance')
                 CHECK('Select This Tab at Open'),AT(550,77),USE(GenQue:SelectTabAtOpen)
@@ -449,10 +451,10 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                     END
                     PROMPT('Indent'),AT(161,91),USE(?GenSim:HdrIndent:Pmt)
                     ENTRY(@n-3),AT(162,102,,11),USE(GenSim:HdrIndent),TIP('Center ignores Indent')
-                    CHECK('Right Border |'),AT(218,35),USE(GenSim:RightBorder)
-                    CHECK('Resizable M'),AT(218,45),USE(GenSim:Resize)
-                    CHECK('Fixed (No Scroll) F'),AT(218,55),USE(GenSim:Fixed)
-                    CHECK('Underline _'),AT(218,65),USE(GenSim:Underline)
+                    CHECK('Resizable M'),AT(218,35),USE(GenSim:Resize)
+                    CHECK('Right Border |'),AT(218,45),USE(GenSim:RightBorder)
+                    CHECK('Underline _'),AT(218,55),USE(GenSim:Underline)
+                    CHECK('Fixed (No Scroll) F'),AT(218,65),USE(GenSim:Fixed)
                     CHECK('Colored *'),AT(218,80),USE(GenSim:Colored),TIP('Color All Columns require' & |
                             's 4 x LONG')
                     CHECK('Style Cell Y'),AT(218,90),USE(GenSim:CellStyle),TIP('Style for All Column' & |

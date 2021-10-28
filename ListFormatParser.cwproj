@@ -31,5 +31,8 @@
   <ItemGroup>
     <Compile Include="ListFormatParser.clw" />
   </ItemGroup>
+  <ItemGroup>
+    <Library Include="ListFormatParser.manifest" />
+  </ItemGroup>
   <Import Project="$(ClarionBinPath)\SoftVelocity.Build.Clarion.targets" />
 </Project>
