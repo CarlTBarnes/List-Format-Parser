@@ -13,6 +13,7 @@
 ! 03-Oct-2021  Generate Format from Queue allow FILE for making Browse Template Format
 ! 04-Oct-2021  List Help tab improvements. Add TYPE column. Add separate Header alignment lines ~L ~C ~R ~D ~()
 ! 05-Oct-2021  Add Manifest
+! 28-Oct-2021  Que2Fmt allow multiple FILE for Browse Tpl
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -52,6 +53,7 @@ ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos)
 ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
 InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt, *LONG OutLeftPos, *LONG OutRightPos, <*STRING OutBetweenStr>),LONG,PROC !Returns -1 Not Found or Length Between may =0
 No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Clipped
+NoTabs              PROCEDURE(*STRING Txt)               !Change Tabs 09 to Space
 Picture_N_Width     PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture ),SHORT,PROC 
 PreviewList         PROCEDURE(STRING pListFormat)
 DB                  PROCEDURE(STRING DbTxt) 
@@ -1082,7 +1084,7 @@ LX USHORT,AUTO
        FmtCB = FmtCB & ')'
     END
     IF FeqFields THEN
-       FmtCB=CHOOSE(~FmtCB,'',FmtCB&', |<13,10>') &' '& CONTENTS(FeqFields) 
+       FmtCB=CHOOSE(~FmtCB,'',FmtCB&', |<13,10>') &' '& CLIP(CONTENTS(FeqFields))
 !       FmtCB=CHOOSE(~FmtCB,'',FmtCB&', |<13,10>') &' #FIELDS('
 !       DO GetFieldsRtn
 !       FmtCB = FmtCB & ')'
@@ -1250,6 +1252,7 @@ FType LIKE(GQFldQ:Type),AUTO
 Label_UPR STRING(64),AUTO
 FTypeOrig LIKE(GQFldQ:Type),AUTO
 LikeWarned BYTE
+GQF_Prefix LIKE(GenQue_Pre)  !Normally from line 1 Queue/File but can change if 2nd file
     CODE
     FREE(GQFieldsQ)
     IF ~GenQue_TextQ THEN 
@@ -1259,6 +1262,7 @@ LikeWarned BYTE
     END
     ?GenQue_TextQ{PROP:Background}=Color:None
     GenQue_Name='' ; GenQue_Pre=''
+    NoTabs(GenQue_TextQ)
 !fix for spaces?    FlattenCls.Flatten(GenQue_TextQ) ; DISPLAY  !TODO move to accepted?
 
     QX=-1
@@ -1292,12 +1296,13 @@ TakeFirstLineRtn ROUTINE
     END    
     QX=0
     GenQue_Name = CLIP(GQFldQ:Label)
-    GenQue_Pre = ''
+    GenQue_Pre  = CLIP(GQFldQ:Label) & '.'
     IF InBetween('PRE(',')',TPart,Paren1,Paren2,PPart) >=0 THEN     !Find PRE(xxxx)
        IF PPart THEN GenQue_Pre=CLIP(PPart) & ':'.                  !Not PRE()
-    ELSIF ~GenQue_IsFILE THEN                   !For FILE is no PRE() do NOT use Dot Syntax
-        GenQue_Pre = CLIP(GQFldQ:Label) & '.'   !No PRE() use Dot. Syntax
+!    ELSIF ~GenQue_IsFILE THEN             !For FILE is no PRE() do NOT use Dot Syntax
+!        GenQue_Pre = CLIP(GQFldQ:Label) & '.'   !No PRE() use Dot. Syntax
     END
+    GQF_Prefix = GenQue_Pre
     EXIT
 
 TakeFieldLineRtn ROUTINE
@@ -1306,7 +1311,7 @@ TakeFieldLineRtn ROUTINE
     GQFldQ:Line = ALine
     Space=INSTRING(' ',ALine,1)
     GQFldQ:Label=SUB(ALine,1,Space) ; Label_UPR=UPPER(GQFldQ:Label)
-    GQFldQ:Pre_Label = GenQue_Pre & GQFldQ:Label
+    GQFldQ:Pre_Label = GQF_Prefix & GQFldQ:Label
 
     TPart=LEFT(SUB(ALine,Space,999))    !ALine now TYPE()
     IF ~TPart THEN EXIT.                !No Type ???? just LABEL 
@@ -1405,6 +1410,7 @@ TakeFieldLineRtn ROUTINE
         END 
 
     OF 'QUEUE'
+        IF QX <> -1 THEN MESSAGE('Cannot have a 2nd Queue, but you can for FILE.||'& ALine,'2 Queues').
         IF PPart THEN
            CASE Message('This a derived QUEUE( Base Type ).|You need to paste in the fields from '& CLIP(PPart) & |
                 '||Line: ' & ALine,'Queue Parse - Derived Queue', Icon:Asterisk, |
@@ -1412,7 +1418,16 @@ TakeFieldLineRtn ROUTINE
            OF 2 ; SETCLIPBOARD('Name      STRING(256)<13,10>ShortName STRING(13)<13,10>Date      LONG<13,10>Time      LONG<13,10>Size      LONG<13,10>Attrib    BYTE') 
                   Message('Fields Clipboard for Paste|You must remove (File:Queue)|={30}|' & CLIPBOARD(),PPart,ICON:Paste,,,MSGMODE:FIXEDFONT+MSGMODE:CANCOPY)
            END 
+        END
+    OF 'FILE'       !10/28/21 allow Secondary files that would be a Browse VIEW related file
+        IF QX <> -1 THEN                            !Not the 1st file?
+           GQF_Prefix = CLIP(GQFldQ:Label) & '.'    !2nd FILE change the Prefix being prepended
+           IF InBetween('PRE(',')',TPart,Paren1,Paren2,PPart) >=0 THEN     !Find PRE(xxxx)
+              IF PPart THEN GQF_Prefix=CLIP(PPart) & ':'.                  !Not PRE()
+           END 
+           EXIT
         END 
+        
     OF 'LIKE'
         IF ~LikeWarned THEN 
            Message('I cannot deal with LIKE() on line ' & TxtLineNo & |
@@ -1902,6 +1917,15 @@ U USHORT
         IF U<N THEN Txt[U]=Txt[N].
     END
     RETURN SUB(Txt,1,U)
+NoTabs PROCEDURE(*STRING Txt)
+N LONG,AUTO
+    CODE
+    LOOP N=1 TO LEN(CLIP(Txt))
+        CASE VAL(Txt[N])
+        OF 9 OROF 160 ; Txt[N]=''    !Hard Space 160 A0h
+        END
+    END
+    RETURN
 !================================
 Picture_N_Width  PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture )!,SHORT,PROC 
 PicWidth SHORT,AUTO

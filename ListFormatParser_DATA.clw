@@ -291,7 +291,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 TEXT,AT(328,274),FULL,USE(HelpModOrder),SKIP,HVSCROLL,FONT('Consolas',9),READONLY
             END
             TAB('&Queue 2 Format'),USE(?TabGenQueue),TIP('Generate a Format from a Queue')
-                PROMPT('Queue Declaration<13,10>or File'),AT(10,206,66,20),USE(?GenQue_TextQ:Prompt)
+                PROMPT('QUEUE Declaration<13,10>or FILE(s)'),AT(10,206,66,20),USE(?GenQue_TextQ:Prompt)
                 BUTTON('P&aste &&<13,10>Process'),AT(12,230,60,22),USE(?GenQue_PasteBtn),SKIP, |
                         ICON(ICON:Paste),TIP('Paste clipboard into Queue text and Process'),LEFT
                 BUTTON('&Process<13,10>Queue'),AT(12,258,60,22),USE(?GenQue_ProcessBtn),ICON(ICON:VCRplay), |
