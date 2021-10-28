@@ -1304,24 +1304,27 @@ TakeFieldLineRtn ROUTINE
     TPart=LEFT(SUB(ALine,Space,999))    !ALine now TYPE()
     IF ~TPart THEN EXIT.                !No Type ???? just LABEL 
 
-    BangX=INSTRING('!',TPart,1)                        !A comment of !@xxxx overrides my Picture
-    CASE lower(SUB(TPart,BangX,6))
-    OF '!@omit' OROF '!omit' ; GQFldQ:OmitHow=eOmit_Omit
-    OF '!@hide' OROF '!hide' ; GQFldQ:OmitHow=eOmit_Hide
-    ELSE 
-       IF BangX AND TPart[BangX : BangX+1]='!@'  THEN 
-          GQFldQ:BangPic=SUB(TPart,BangX,32)              !so = !@xxxx            
-          IF UPPER(GQFldQ:BangPic[1:3])='!@P' THEN 
-             XX=INSTRING(GQFldQ:BangPic[3],GQFldQ:BangPic,1,4)   !@P ends at P
-             IF ~XX THEN XX=INSTRING(' ',GQFldQ:BangPic,1,1).
-          ELSE
-             XX=INSTRING(' ',GQFldQ:BangPic,1,1)       !@x ends at space, yah could have "@n12~% ~" with space, sorry
-          END
-          IF ~XX THEN XX=12.
-          GQFldQ:BangPic = SUB(GQFldQ:BangPic,1,XX)    !Trim after !@picture  Trim Junk Here
-       END !if !@
-    END !case
-    IF BangX THEN TPart=SUB(TPart,1,BangX-1).  !Cutoff !Comments
+    LOOP 4 TIMES                      !Allow !Hide or !Omit and !@Picture
+       BangX=INSTRING('!',TPart,1)    !A comment of !@xxxx overrides my Picture
+       IF ~BangX THEN BREAK.
+       CASE lower(SUB(TPart,BangX,6))
+       OF '!@omit' OROF '!omit' ; GQFldQ:OmitHow=eOmit_Omit
+       OF '!@hide' OROF '!hide' ; GQFldQ:OmitHow=eOmit_Hide
+       ELSE 
+          IF TPart[BangX : BangX+1]='!@'  THEN 
+             GQFldQ:BangPic=SUB(TPart,BangX,32)              !so = !@xxxx            
+             IF UPPER(GQFldQ:BangPic[1:3])='!@P' THEN 
+                XX=INSTRING(GQFldQ:BangPic[3],GQFldQ:BangPic,1,4)   !@P ends at P
+                IF ~XX THEN XX=INSTRING(' ',GQFldQ:BangPic,1,1).
+             ELSE
+                XX=INSTRING(' ',GQFldQ:BangPic,1,1)       !@x ends at space, yah could have "@n12~% ~" with space, sorry
+             END
+             IF ~XX THEN XX=12.
+             GQFldQ:BangPic = SUB(GQFldQ:BangPic,1,XX)    !Trim after !@picture  Trim Junk Here
+          END !if !@
+       END !case
+       TPart[BangX]=' '  !Remove ! Bang or will find again 
+    END
 
     ParserCls.MakeCodeOnlyLine(TPart,TPartCO)
     GQFldQ:TypeCode=TPartCO        !e.g.  DECIMAL(9,2,) or
