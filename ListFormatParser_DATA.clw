@@ -310,13 +310,13 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 STRING('Right-Click on Fields List for Popup Options to Move or Remove Fields'), |
                         AT(480,208),USE(?GQFieldsFYI)
                 LIST,AT(317,223),FULL,USE(?List:GQFieldsQ),VSCROLL,FONT('Consolas',9),FROM(GQFieldsQ), |
-                        FORMAT('19R(5)|M~No.~C(0)@n3@60L(2)|M~Label~C(0)26L(2)|M~Omit~C(0)@s4@Q''Omi' & |
-                        't from List with !Omit<13,10>Hide as Zero Width with !Hide''34L(2)|M~TYPE~C' & |
-                        '(0)34L(2)|M~(nums)~C(0)32L(2)|M~!@Pic~C(0)Q'' !@picture comment with on lin' & |
-                        'es overrides calculated ''41L(2)|M~Picture~C(0)32R(2)|M~Chars~C(0)@s6@54L(2' & |
-                        ')|M~Type Code~60L(2)|M~Pre_Label~60L(2)|M~Code Line ~60L(2)|M~Debug~'), |
-                        ALRT(CtrlUp), ALRT(CtrlDown), ALRT(DeleteKey), ALRT(CtrlDelete), |
-                         ALRT(InsertKey), ALRT(CtrlHome), ALRT(CtrlEnd)
+                        DRAGID('GQFieldsQ'),DROPID('GQFieldsQ'),FORMAT('19R(5)|M~No.~C(0)@n3@60L(2)|' & |
+                        'M~Label~C(0)26L(2)|M~Omit~C(0)@s4@Q''Omit from List with !Omit<13,10>Hide a' & |
+                        's Zero Width with !Hide''34L(2)|M~TYPE~C(0)34L(2)|M~(nums)~C(0)32L(2)|M~!@P' & |
+                        'ic~C(0)Q'' !@picture comment with on lines overrides calculated ''41L(2)|M~' & |
+                        'Picture~C(0)32R(2)|M~Chars~C(0)@s6@54L(2)|M~Type Code~60L(2)|M~Pre_Label~60' & |
+                        'L(2)|M~Code Line ~60L(2)|M~Debug~'),ALRT(CtrlUp), ALRT(CtrlDown), |
+                         ALRT(DeleteKey), ALRT(CtrlDelete), ALRT(InsertKey), ALRT(CtrlHome), ALRT(CtrlEnd)
                 PANEL,AT(10,201,,2),FULL,USE(?PanelAboveFmtQue),BEVEL(0,0,0600H)
                 GROUP('List Format Preferences'),AT(14,20,333,82),USE(?GemQue_Group),BOXED
                     GROUP,AT(17,30,92,64),USE(?GQUprLeftGROUP)

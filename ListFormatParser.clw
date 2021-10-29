@@ -14,6 +14,7 @@
 ! 04-Oct-2021  List Help tab improvements. Add TYPE column. Add separate Header alignment lines ~L ~C ~R ~D ~()
 ! 05-Oct-2021  Add Manifest
 ! 28-Oct-2021  Que2Fmt allow multiple FILE for Browse Tpl
+!              Drag and Drop in GQ Fields Queue 
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -1672,6 +1673,8 @@ GQChoice LONG,AUTO
 GQMax LONG,AUTO
 NATilde PSTRING(2)
 PopNo SHORT,AUTO 
+DragRow SHORT,AUTO 
+DropRow SHORT,AUTO 
     MAP
 GQMoveLine  PROCEDURE(SHORT UpOrDown)
 GQHideLine  PROCEDURE()
@@ -1696,6 +1699,21 @@ GQOmitLine  PROCEDURE()
        OF DeleteKey ; GQOmitLine()
        OF CtrlDelete ; DELETE(GQFieldsQ)
        END
+    OF EVENT:Drop ; DragRow = ?List:GQFieldsQ{PROPLIST:MouseDownRow}
+                    DropRow = ?List:GQFieldsQ{PROPLIST:MouseUpRow}
+                    !0{PROP:Text}='EVENT:Drop DragID()='& DragID() &' DropID()='& DropID() & ' MouseDownRow=' & DragRow  &' UpRow=' & DropRow  
+                    CASE DropRow
+                    OF 0  ; GQMoveLine(-2) 
+                    OF -1 ; GQMoveLine(2)
+                    OF DragRow  !Same row
+                    ELSE !Move to row after dropped on row
+                        GET(GQFieldsQ,DragRow) 
+                        IF ~ERRORCODE() THEN 
+                           DELETE(GQFieldsQ)
+                           IF DropRow < DragRow THEN DropRow += 1.
+                           ADD(GQFieldsQ,DropRow)
+                        END 
+                    END 
     END
 PopupRtn ROUTINE
     SETKEYCODE(0)
