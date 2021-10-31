@@ -1687,6 +1687,7 @@ ChangesGQF LONG,AUTO
 GQMoveLine  PROCEDURE(SHORT UpOrDown)
 GQHideLine  PROCEDURE()
 GQOmitLine  PROCEDURE()
+GQAllLines  PROCEDURE(SHORT AllWhat)
     END    
     CODE
     GQMax = RECORDS(GQFieldsQ) ; IF ~GQMax THEN RETURN.
@@ -1736,6 +1737,7 @@ PopupRtn ROUTINE
                 '|-' & |
                 '|'& NATilde & CHOOSE(GQFldQ:OmitHow<>eOmit_Hide,'Hide Field (zero width)','Un-Hide Field') &'<9>Insert' & |
                 '|'& NATilde & CHOOSE(GQFldQ:OmitHow<>eOmit_Omit,'Omit Field from List'   ,'Un-Omit Field') &'<9>Delete' & |
+                '|-|ALL Fields{{Hide All|Un-Hide All|-|Omit All|Un-Omit All|-|Original Sequence}' & |
                 '|-|' & |
                 '|Remove from List<9>Ctrl+Delete')
     IF ~PopNo THEN EXIT.
@@ -1746,6 +1748,11 @@ PopupRtn ROUTINE
       GQMoveLine(2)
       GQHideLine()
       GQOmitLine()
+      GQAllLines(1)  !Hide All
+      GQAllLines(-1) !UnHide
+      GQAllLines(2)  !Omit All
+      GQAllLines(-2) !UnOmit
+      SORT(GQFieldsQ,GQFldQ:FieldNo)  !Orig Sequence
       DELETE(GQFieldsQ)
     END
     EXIT
@@ -1776,6 +1783,21 @@ GQOmitLine  PROCEDURE()
     IF ~NATilde THEN
        GQFldQ:OmitHow=CHOOSE(GQFldQ:OmitHow=eOmit_Omit,'',eOmit_Omit)
        PUT(GQFieldsQ)
+    END
+    RETURN
+GQAllLines  PROCEDURE(SHORT AllWhat)
+XQ LONG,AUTO
+    CODE
+    LOOP XQ=1 TO RECORDS(GQFieldsQ)
+        GET(GQFieldsQ,XQ)
+        IF GQFldQ:OmitHow=eOmit_NA_ THEN CYCLE.
+        CASE AllWhat
+        OF  1 ;    GQFldQ:OmitHow=eOmit_Hide
+        OF -1 ; IF GQFldQ:OmitHow=eOmit_Hide THEN GQFldQ:OmitHow=''.
+        OF  2 ;    GQFldQ:OmitHow=eOmit_Omit
+        OF -2 ; IF GQFldQ:OmitHow=eOmit_Omit THEN GQFldQ:OmitHow=''.
+        END
+        PUT(GQFieldsQ)
     END
     RETURN
 !----------------------------------
