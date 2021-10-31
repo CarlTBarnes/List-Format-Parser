@@ -137,6 +137,7 @@ PictureAccepted  PROCEDURE(LONG FEQ, STRING DorT)
 PicturePopup     PROCEDURE(LONG FEQ, STRING DorT)
 
 QueueTextParse   PROCEDURE()    !Parse GenQue_TextQ TEXT into GQFieldsQ Queue
+QueueAutoGenerate PROCEDURE()   !Generate if GenQue:AutoGenerate checked and have RECORDS GQFieldsQ
 QueueGenFormat   PROCEDURE()    !Build Format() using GenFmt_Queue and GQFieldsQ queue
 QueuePreviewBtn  PROCEDURE()
 QueueParseBtn    PROCEDURE()

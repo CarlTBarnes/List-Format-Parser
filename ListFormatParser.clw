@@ -1450,6 +1450,13 @@ TakeFieldLineRtn ROUTINE
     QX += 1
     EXIT
 !------------------------------------------------
+GenFmt.QueueAutoGenerate PROCEDURE()  !Generate if GenQue:AutoGenerate checked and have RECORDS GQFieldsQ
+    CODE
+    IF GenQue:AutoGenerate AND GenQue_TextQ AND RECORDS(GQFieldsQ) THEN
+       GenFmt.QueueGenFormat()
+    END
+    RETURN
+!------------------------------------------------
 GenFmt.QueueGenFormat PROCEDURE()   !Build Format() using GenFmt_Queue and GQFieldsQ queue
 ColX USHORT,AUTO
 Fmt  PSTRING(256)
@@ -1675,6 +1682,7 @@ NATilde PSTRING(2)
 PopNo SHORT,AUTO 
 DragRow SHORT,AUTO 
 DropRow SHORT,AUTO 
+ChangesGQF LONG,AUTO 
     MAP
 GQMoveLine  PROCEDURE(SHORT UpOrDown)
 GQHideLine  PROCEDURE()
@@ -1683,6 +1691,7 @@ GQOmitLine  PROCEDURE()
     CODE
     GQMax = RECORDS(GQFieldsQ) ; IF ~GQMax THEN RETURN.
     GQChoice = CHOICE(?List:GQFieldsQ)
+    ChangesGQF = CHANGES(GQFieldsQ) 
     IF ~GQChoice THEN GQChoice=1 ; ?List:GQFieldsQ{PROP:Selected}=1.
     GET(GQFieldsQ,GQChoice)  ; IF ERRORCODE() THEN STOP('GET(GQFieldsQ ' & Error()) ; RETURN.
     NATilde=CHOOSE(GQFldQ:OmitHow=eOmit_NA_,'~','')
@@ -1699,22 +1708,25 @@ GQOmitLine  PROCEDURE()
        OF DeleteKey ; GQOmitLine()
        OF CtrlDelete ; DELETE(GQFieldsQ)
        END
-    OF EVENT:Drop ; DragRow = ?List:GQFieldsQ{PROPLIST:MouseDownRow}
-                    DropRow = ?List:GQFieldsQ{PROPLIST:MouseUpRow}
-                    !0{PROP:Text}='EVENT:Drop DragID()='& DragID() &' DropID()='& DropID() & ' MouseDownRow=' & DragRow  &' UpRow=' & DropRow  
-                    CASE DropRow
-                    OF 0  ; GQMoveLine(-2) 
-                    OF -1 ; GQMoveLine(2)
-                    OF DragRow  !Same row
-                    ELSE !Move to row after dropped on row
-                        GET(GQFieldsQ,DragRow) 
-                        IF ~ERRORCODE() THEN 
-                           DELETE(GQFieldsQ)
-                           IF DropRow < DragRow THEN DropRow += 1.
-                           ADD(GQFieldsQ,DropRow)
-                        END 
-                    END 
+    OF EVENT:Drop
+       DragRow = ?List:GQFieldsQ{PROPLIST:MouseDownRow}
+       DropRow = ?List:GQFieldsQ{PROPLIST:MouseUpRow}
+       !0{PROP:Text}='EVENT:Drop DragID()='& DragID() &' DropID()='& DropID() & ' MouseDownRow=' & DragRow  &' UpRow=' & DropRow  
+       CASE DropRow
+       OF 0  ; GQMoveLine(-2) 
+       OF -1 ; GQMoveLine(2)
+       OF DragRow !Same row
+       ELSE !Move to row after dropped on row
+           GET(GQFieldsQ,DragRow) 
+           IF ~ERRORCODE() THEN 
+              DELETE(GQFieldsQ)
+              IF DropRow < DragRow THEN DropRow += 1.
+              ADD(GQFieldsQ,DropRow)
+           END 
+       END
     END
+    IF ChangesGQF <> CHANGES(GQFieldsQ) THEN GenFmt.QueueAutoGenerate().
+    RETURN
 PopupRtn ROUTINE
     SETKEYCODE(0)
     PopNo=POPUP(CHOOSE(GQChoice=1    , '~', '')  & 'Move Field to Top<9>Ctrl+Home' & |
@@ -1736,7 +1748,7 @@ PopupRtn ROUTINE
       GQOmitLine()
       DELETE(GQFieldsQ)
     END
-
+    EXIT
 GQMoveLine  PROCEDURE(SHORT UpOrDown)
 NewPoz LONG,AUTO
     CODE
