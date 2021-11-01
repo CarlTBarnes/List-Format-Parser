@@ -1173,7 +1173,7 @@ DateRtn ROUTINE
            FmtStr=FORMAT(FmtLong,PPic)
            DO mmddyyyyRtn
         END
-        PupTxt=PupTxt & CHOOSE(Px=17,'|-|','|') &pPic &'<9>'& CLIP(FmtStr) !&' = '& CLIP(FORMAT(FmtLong,PPic))
+        PupTxt=PupTxt & CHOOSE(Px=17,'|-|','|') &  CLIP(FmtStr) &'<9>'& pPic !&' = '& CLIP(FORMAT(FmtLong,PPic))
     END
     PupNo=POPUP(PupTxt,BtnX,BtnY,1)
     IF ~PupNo THEN EXIT.
@@ -1211,7 +1211,7 @@ TimeRtn ROUTINE
         pPic='@t' & TimeZero & PX & TimeColon  & TimeBlank
         FmtStr=FORMAT(FmtLong,PPic)
         DO hhmmssRtn    
-        PupTxt=PupTxt & CHOOSE(Px=7,'|-|','|') &pPic &'<9>'& CLIP(FmtStr) !&' = '& CLIP(FORMAT(FmtLong,PPic))
+        PupTxt=PupTxt & CHOOSE(Px=7,'|-|','|') & CLIP(FmtStr) &'<9>'& pPic !&' = '& CLIP(FORMAT(FmtLong,PPic))
     END 
     PupNo=POPUP(PupTxt,BtnX,BtnY,1)
     IF ~PupNo THEN EXIT.
