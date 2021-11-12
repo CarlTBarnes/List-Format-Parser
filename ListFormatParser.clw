@@ -14,7 +14,8 @@
 ! 04-Oct-2021  List Help tab improvements. Add TYPE column. Add separate Header alignment lines ~L ~C ~R ~D ~()
 ! 05-Oct-2021  Add Manifest
 ! 28-Oct-2021  Que2Fmt allow multiple FILE for Browse Tpl
-!              Drag and Drop in GQ Fields Queue 
+!              Drag and Drop in GQ Fields Queue
+! 12-Nov-2021  New FROM parsing of FROM('Choice 1|#1') to lines shows on new Tab('FROM')
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -146,7 +147,7 @@ Tabs1Line       BOOL
             Fmt:Explain = Format2QCls.GetExplainLines()
             DO ParseListParsedIntoListLinesRtn      
             DO LengthsTextRtn
-            SELECT(?TabFormatLines) 
+            SELECT(CHOOSE(Fmt:Format OR ~From:From,?TabFormatLines,?TabFROM)) 
             DISPLAY
 
         OF ?CopyLineFmtBtn   ; SETCLIPBOARD(Fmt:InLines)
@@ -160,14 +161,16 @@ Tabs1Line       BOOL
         OF ?CopyListFlatBtn       ; SETCLIPBOARD(ListFlat)
         OF ?CopyLineFieldsBtn     ; SETCLIPBOARD(Flds:FIELDScode)
         OF ?ListParsedHScrollOff  ; ?ListParsed{PROP:HScroll}=CHOOSE(~ListParsedHScrollOff,'1','') ; DISPLAY 
-                
+        OF ?FromFromCopyBtn       ; SETCLIPBOARD(From:From)
+        OF ?FromInLinesCopyBtn    ; SETCLIPBOARD(From:InLines)
+
         OF ?LIST:HistoryQ
             IF KEYCODE()=MouseLeft2 THEN 
                GET(HistoryQ, CHOICE(?LIST:HistoryQ))
                ListControl = HisQ:ListControl
                POST(EVENT:Accepted,?ProcessBtn) 
             END 
-        OF ?RunAgainBtn OROF ?RunAgainGFQBtn ; RUN(COMMAND('0'))
+        OF ?RunAgainBtn OROF ?RunAgainGFQBtn OROF ?RunAgainFmtBtn OROF ?RunAgainFromBtn ; RUN(COMMAND('0'))
         OF ?DebugTabs   ; DO TabHideSyncRtn 
         OF ?PreviewListBtn OROF ?PreviewList2Btn OROF ?PreviewList3Btn
             IF Fmt:Format THEN 
@@ -267,23 +270,29 @@ TabHideSyncRtn ROUTINE
     ?TabFormatQ{PROP:Hide}=1-DebugTabs
     ?TabFieldsQ{PROP:Hide}=1-DebugTabs
     ?TabExplainQ{PROP:Hide}=1-DebugTabs
+    IF DebugTabs AND 0{PROP:Width}<620 THEN 0{PROP:Width}=620.
 
 LengthsTextRtn ROUTINE  !Debug info on screen to know STRING's are big enough
-    ?Lengths{PROP:Text}='Lengths: LIST ' & LEN(CLIP(ListControl)) &' bytes, ' & |
-                     'Fmt Lines ' & LEN(CLIP(Fmt:InLines))    &' , ' & |
-                     'FldsLines ' & LEN(CLIP(Flds:InLines))   &' , ' & |
-                     'FldsCode ' & LEN(CLIP(Flds:FieldsCode)) &' , ' & |
-                     'Explain ' & LEN(CLIP(Fmt:Explain))      &' , ' & |
-                     'LIST Lines ' & LEN(CLIP(ListParsed))    &' , ' & |
-                     'Flat ' & LEN(CLIP(ListFlat))            &' , ' & |
-                     'Format ' & LEN(CLIP(Fmt:Format))        &' , ' & |
-                     'FldsFlat ' & LEN(CLIP(Flds:FieldsFlat)) &' , ' & |           
-                     'TokFmt ' & LEN(CLIP(Fmt:TokFmt)) &' bytes'
+    ?Lengths{PROP:Text}='Lengths: LIST ' & LEN(CLIP(ListControl)) &' , ' & |
+                     'Fmt Lines ' & LEN(CLIP(Fmt:InLines))    &', ' & |
+                     'FldsLines ' & LEN(CLIP(Flds:InLines))   &', ' & |
+                     'FldsCode ' & LEN(CLIP(Flds:FieldsCode)) &', ' & |
+                     'Explain ' & LEN(CLIP(Fmt:Explain))      &', ' & |
+                     'ListParsed ' & LEN(CLIP(ListParsed))    &', ' & |
+                     'Flat ' & LEN(CLIP(ListFlat))            &', ' & |
+                     'Format ' & LEN(CLIP(Fmt:Format))        &', ' & |
+                     'FldsFlat ' & LEN(CLIP(Flds:FieldsFlat)) &', ' & |           
+                     'TokFmt ' & LEN(CLIP(Fmt:TokFmt))        &' -- ' & |
+                     'FROM ' & LEN(CLIP(From:From))           &', ' & | 
+                     'Lines ' & LEN(CLIP(From:InLines))       &', ' & |
+                     'Case ' & LEN(CLIP(From:CASE))           &' bytes'
 
 ParseRtn ROUTINE
     CLEAR(FormatGrp) ;   FREE(FormatQ)    
     CLEAR(FieldsGrp) ;   FREE(FieldsQ) 
+    CLEAR(FromGrp)
     IF ~ListFlat THEN EXIT.              !Flaten failed
+    DO Parse_FROM_Rtn    
     DO Parse2Rtn
     DISPLAY
     IF ~Fmt:Format  THEN      !did not find FORMAT, maybe they pasted Format string only
@@ -309,7 +318,7 @@ ParseRtn ROUTINE
     Format2QCls.Parse2Q(Fmt:Format, Fmt:TokFmt )
     DISPLAY
     EXIT
-    
+
 Parse2Rtn ROUTINE
 
     Fmt:Found = ParserCls.FindAttrParen(ListFlat, 'FORMAT', Fmt:BegPos, Fmt:Paren1, Fmt:Paren2, Fmt:Quote1, Fmt:Quote2)  
@@ -391,7 +400,91 @@ MaxFld  LONG
                        CHOOSE(Ndx=Flds:Records,' ) ,',' , |<13,10> {9}')
     END     
     EXIT
-
+!--------------------
+Parse_FROM_Rtn ROUTINE !FROM('Name|#Value') Parsing added 11/10/21
+   DATA
+FX LONG
+F1 LONG
+CX LONG
+LenFrom LONG             !' FROM(
+FNewLine STRING(' &|<13,10>      ')
+FromIsLast BOOL
+FItem PSTRING(256)
+FCaseQ QUEUE,PRE(FCaseQ)
+Item     PSTRING(256) !FCaseQ:Item
+ItemLen  SHORT        !FCaseQ:ItemLen
+LabelLen SHORT        !FCaseQ:LabelLen
+ValuePos SHORT        !FCaseQ:ValuePos  |# or 1
+ValueLen SHORT        !FCaseQ:ValueLen
+      END
+MaxValLen BYTE
+Use:BegPos LONG
+Use:Paren1 LONG
+Use:Paren2 LONG
+CsvLabels  CSTRING(1000)
+CsvValues  CSTRING(1000)
+    CODE
+    From:Found = ParserCls.FindAttrParen(ListFlat, 'FROM', From:BegPos, From:Paren1, From:Paren2, From:Quote1, From:Quote2)
+    IF DebugMsgs THEN MESSAGE('Find FROM  From:Found=' & From:Found &|
+            '||BegPos=' & From:BegPos &', Paren1=' & From:Paren1  &', Paren2=' & From:Paren2 &', Quote1=' & From:Quote1 &', Quote2=' & From:Quote2 & |
+            '||' & SUB(ListFlat, From:BegPos, From:Paren2 - From:BegPos+1) )  .
+    IF ~From:Found OR From:Quote1<1 OR From:Quote2 < 2 OR From:Quote2 <= From:Quote1 THEN
+        From:Found = 0
+        EXIT
+    END
+    From:FROM = LEFT(ListFlat[From:Quote1 + 1 : From:Quote2 - 1] )
+    IF SUB(ListFlat,From:Paren2+1,9999)<='' THEN FromIsLast=True.
+    IF ~From:FROM THEN EXIT.
+    From:InLines=' , |<13,10>  FROM('
+    F1=1
+    LenFrom=LEN(CLIP(From:FROM))
+    LOOP FX=2 TO LenFrom+1
+         IF FX=LenFrom+1              |     !The End of the From
+         OR (From:FROM[FX]='|'        |     !The End of an Element
+         AND From:FROM[FX+1] <> '|'   |     !Two || are compressed to 1
+         AND From:FROM[FX+1] <> '#' ) THEN  !The |#Value remains on the same line
+             FItem=From:FROM[F1 : FX-1]
+             From:InLines=CLIP(From:InLines) & |             ! Prior |strings
+                          CHOOSE(F1=1,'',FNewLine) &|        ! &|<13,10>
+                          ''''& FItem &''''   !  |Next String|#Value
+             IF F1>1 THEN FItem=SUB(FItem,2,LEN(FItem)-1). !'|String' now 'String'
+             FCaseQ:Item = FItem                !Build CaseQ so can generate CASE OF #Value
+             FCaseQ:ItemLen=LEN(FItem)
+             CX=INSTRING('|#',FItem,1)          !Look for |#Value
+             IF ~CX THEN                        !No |#Value
+                FCaseQ:ValuePos=1
+                FCaseQ:ValueLen=FCaseQ:ItemLen
+                FCaseQ:LabelLen=FCaseQ:ItemLen
+             ELSE
+                FCaseQ:ValuePos=CX+2              !Take |# as Value
+                FCaseQ:ValueLen=FCaseQ:ItemLen-CX-1
+                FCaseQ:LabelLen=CX-1
+             END
+             IF MaxValLen < FCaseQ:ValueLen THEN MaxValLen=FCaseQ:ValueLen.
+             ADD(FCaseQ)
+             F1 = FX
+         END
+    END
+    From:InLines=CLIP(From:InLines) &')'& CHOOSE(~FromIsLast,', |','')
+    From:CASE='CASE ListUseVariable'
+    IF ParserCls.FindAttrParen(ListFlat, 'USE', Use:BegPos, Use:Paren1, Use:Paren2, CX, CX) |
+    AND Use:Paren2 > Use:Paren1 THEN
+        FItem=CLIP(LEFT(ListFlat[Use:Paren1 + 1 : Use:Paren2 - 1]))
+        IF FItem>' ' AND FItem[1]<>'?' THEN From:CASE='CASE '& FItem.
+    END
+    LOOP CX=1 TO RECORDS(FCaseQ)
+         GET(FCaseQ,CX)
+         From:CASE=CLIP(From:CASE)&'<13,10>'& |
+            'OF '''& SUB(FCaseQ:Item,FCaseQ:ValuePos, FCaseQ:ValueLen) &'''' & |
+            ALL(' ',MaxValLen-FCaseQ:ValueLen+10) &'!'& FORMAT(CX,@n3) &'  '& FCaseQ:Item
+         CsvLabels=CHOOSE(CX=1,'',CsvLabels&',') &''''& SUB(FCaseQ:Item,1, FCaseQ:LabelLen) &''''
+         CsvValues=CHOOSE(CX=1,'',CsvValues&',') &''''& SUB(FCaseQ:Item,FCaseQ:ValuePos, FCaseQ:ValueLen) &''''
+    END
+    From:CASE = CLIP(From:CASE) &   '<13,10>END' &|
+                             '<13,10><13,10>! '& CsvLabels  & |       !For INLIST or CHOOSE
+      CHOOSE(CsvValues=CsvLabels,'','<13,10>! '& CsvValues) &'<13,10>'
+    EXIT
+!--------------------
 AddHistoryRtn ROUTINE
     DATA
 ChIn    LONG,AUTO    
@@ -1858,11 +1951,16 @@ Exp5 STRING('ModTest WINDOW(''Modifiers and Picutres''),AT(,,586,90),GRAY,FONT('
      '<13,10>     ''.2@40R(2)|M~Euro n9`2~C(0)@n-10`2@42L(2)|M~SSN  P # P~C(0)@p###'' & |' &|
      '<13,10>     ''-##-####p@30R(2)|M~Time~C(0)@t3@40L(2)|M~Date d4 ~@d4@48L(2)|M~'' & |' &|
      '<13,10>     ''E12.1 Picture~L(1)@E12.1@'')' &|
-     '<13,10>  END' )     
+     '<13,10>  END' )
+Exp6 STRING(' LIST,AT(180,14,90,11),USE(TransWanted),VSCROLL,DROP(14),FROM(''ALL Types|'' & |' &|   !,FORMAT(''90L(2)'')
+     '<13,10>   ''#ALL|TRS|THIS|Surcharge|#SURCH|T.R.I.P.|#TRIP|Federal TR'' & |' &|
+     '<13,10>   ''S|#FEDTRS|SSP ** ALL Types **|#SSP_ALL|SSP Standard |#SSPSTD|SSP Catchup |'' & |' &|
+     '<13,10>   ''#SSPCAT|SSP Special |#SSPSPE|SSP Roth Standard |#ROTHSTD|SSP Roth Catchup '' & |' &|
+     '<13,10>   ''|#ROTHCAT|SSP Roth Special |#ROTHSPE|Board Paid SSP|#SSPBRD'')' )
     CODE
     IF ~OMITTED(GenQueFmtExample) THEN DO GenQueRtn.
     IF ~ExpNo THEN 
-        ExpNo=POPUP('Customer Meter|Simple Emp Type Tag|Employee Browse|Everything|Preview All Modifiers')
+        ExpNo=POPUP('Customer Meter|Simple Emp Type Tag|Employee Browse|Everything|Preview All Modifiers|FROM Test')
     END
     EXECUTE ExpNo
     RETURN Exp1
@@ -1870,6 +1968,7 @@ Exp5 STRING('ModTest WINDOW(''Modifiers and Picutres''),AT(,,586,90),GRAY,FONT('
     RETURN Exp3 
     RETURN Exp4
     RETURN Exp5
+    RETURN Exp6
     END
     RETURN Exp3
 GenQueRtn ROUTINE

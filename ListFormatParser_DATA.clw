@@ -23,6 +23,18 @@ Fmt:InLines STRING(4000)     !Format() one per line in my token format
 Fmt:Explain STRING(9000)     !Comments about the Format
         END
 
+FromGrp  GROUP,PRE()         !11/08/21 Add a FROM Tab
+From:Found   BOOL
+From:BegPos  LONG
+From:Paren1  LONG
+From:Paren2  LONG
+From:Quote1  LONG
+From:Quote2  LONG
+From:FROM    STRING(2000)
+From:InLines STRING(3000)
+From:CASE    STRING(4000)
+        END
+
 FieldsGrp  GROUP,PRE()    !Pre(Flds)
 Flds:Found   BOOL
 Flds:Records LONG
@@ -216,7 +228,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 BUTTON('P&aste Code<13,10>and Process'),AT(45,21,74,22),USE(?PasteBtn),SKIP, |
                         ICON(ICON:Paste),TIP('Paste Clipboard into List Code entry and Process'),LEFT
                 BUTTON('&Process<13,10>LIST'),AT(127,21,58,22),USE(?ProcessBtn),ICON(ICON:VCRplay),LEFT
-                TEXT,AT(7,49,,226),FULL,USE(ListControl),HVSCROLL,FONT('Consolas',9)
+                TEXT,AT(7,49,,226),FULL,USE(ListControl),HVSCROLL,FONT('Consolas',10)
                 BUTTON('&Close'),AT(193,21,42,22),USE(?CloseBtn),SKIP,STD(STD:Close)
                 BUTTON('&ReRun'),AT(425,21,35,18),USE(?RunAgainBtn),SKIP,TIP('Run Another Instance')
                 CHECK('Debug Tabs'),AT(245,21),USE(DebugTabs),SKIP,TIP('Show debug Message() during ' & |
@@ -245,6 +257,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 BUTTON('Preview<13,10>Format()'),AT(344,23,62,22),USE(?PreviewListBtn),SKIP, |
                         ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
                 BUTTON,AT(419,23,22,22),USE(?ModHelpBtn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')
+                BUTTON('&ReRun'),AT(461,23,35,22),USE(?RunAgainFmtBtn),SKIP,TIP('Run Another Instance')
                 TEXT,AT(139,52),FULL,USE(Fmt:InLines),SKIP,HVSCROLL,FONT('Consolas',9)
                 PROMPT('Fields'),AT(8,27),USE(?PROMPT1)
                 BUTTON('Copy Fields'),AT(39,23,51,22),USE(?CopyLineFieldsBtn),SKIP,ICON(ICON:Copy), |
@@ -259,6 +272,21 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 BUTTON,AT(12,60,18,18),USE(?PreviewList2Btn),SKIP,ICON(ICON:Zoom),TIP('Preview LIST')
                 BUTTON,AT(12,85,18,18),USE(?ModHelp2Btn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')
                 TEXT,AT(39,26),FULL,USE(Fmt:Explain),HVSCROLL,FONT('Consolas',9)
+            END
+            TAB(' FR&OM '),USE(?TabFROM),TIP('LIST FROM()')
+                PROMPT(' LIST with FROM(''String 1|String 2|#2'') is parsed into continuation Lines ' & |
+                        'for viewing and editing. '),AT(6,22,,10),USE(?FromFYI),FONT('Consolas',9, |
+                        COLOR:Black),COLOR(COLOR:White)
+                PROMPT('FROM( )'),AT(7,41),USE(?From:Format:Prompt)
+                TEXT,AT(40,40,460,58),USE(From:From),VSCROLL,FONT('Consolas',10)
+                BUTTON,AT(12,61,18,18),USE(?FromFromCopyBtn),SKIP,ICON(ICON:Copy),TIP('Copy FORM() t' & |
+                        'o Clipboard')
+                PROMPT('FROM( )<13,10>Lines'),AT(7,108,,30),USE(?From:InLines:Prompt)
+                TEXT,AT(40,107,230),FULL,USE(From:InLines),HVSCROLL,FONT('Consolas',10)
+                TEXT,AT(280,107),FULL,USE(From:CASE),HVSCROLL,FONT('Consolas',10)
+                BUTTON,AT(12,142,18,18),USE(?FromInLinesCopyBtn),SKIP,ICON(ICON:Copy),TIP('Copy FORM' & |
+                        '() in Lines to Clipboard')
+                BUTTON('&ReRun'),AT(5,201,29,18),USE(?RunAgainFromBtn),SKIP,TIP('Run Another Instance')
             END
             TAB(' LIST Lines '),USE(?TabListLines),TIP('All LIST attributes parsed as one per line')
                 BUTTON('Copy LIST'),AT(61,22,55,22),USE(?CopyListLineFmtBtn),SKIP,ICON(ICON:Copy), |
@@ -404,8 +432,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         TIP('Clear to Program Defaults')
                 BUTTON(' &Generate<13,10> Format'),AT(52,105,66,23),USE(?GenQueueFormatBtn), |
                         ICON('LFmtIcon.ico'),TIP('Generate format using above parameters'),LEFT
-                BUTTON('Pre&view<13,10>Format'),AT(125,105,66,23),USE(?GenQueuePreviewBtn), |
-                        ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
+                BUTTON('Pre&view<13,10>Format'),AT(125,105,66,23),USE(?GenQueuePreviewBtn),ICON(ICON:Zoom), |
+                        TIP('Preview Format in a LIST on a Window'),LEFT
                 BUTTON('Pa&rse<13,10>Format'),AT(197,105,66,23),USE(?GenQueueParseBtn),ICON(ICON:VCRplay), |
                         TIP('Put Format into "LIST Code" tab then parse Columns to "FORMAT Lines" tab'), |
                         LEFT
@@ -417,8 +445,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         'ORMAT() to Clipboard')
                 BUTTON,AT(12,178,18,18),USE(?GenQueueCopyField2Btn),SKIP,ICON(ICON:Copy),TIP('Copy F' & |
                         'ORMAT()<13,10>and #FIELDS() to Clipboard')
-                BUTTON,AT(420,110,18,18),USE(?GenQueueCopyFieldsBtn),SKIP,ICON(ICON:Copy),TIP('Copy ' & |
-                        '#FIELDS() to Clipboard')
+                BUTTON,AT(420,110,18,18),USE(?GenQueueCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
+                        TIP('Copy #FIELDS() to Clipboard')
                 PROMPT('What''s This:<13,10>Creating a new List Format for a Queue can be tedious ad' & |
                         'ding each column. This generates a FORMAT for your QUEUE definition you pas' & |
                         'te into the Text control on the lower left.'),AT(420,20,110,86),USE(?GenQueueWhatsThis) |
@@ -502,28 +530,30 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 BUTTON('Copy Flat'),AT(58,22,,14),USE(?CopyListFlatBtn),SKIP,TIP('Copy Flat Code to ' & |
                         'Clipboard')
                 PROMPT('Flat Code:'),AT(9,25),USE(?ListFlat:Prompt)
-                TEXT,AT(9,40),FULL,USE(ListFlat),VSCROLL,FONT('Consolas',9)
+                TEXT,AT(9,40),FULL,USE(ListFlat),VSCROLL,FONT('Consolas',10)
             END
             TAB(' Parsed '),USE(?TabParsed)
                 STRING('Lengths'),AT(7,24),USE(?Lengths)
                 PROMPT('Format'),AT(7,39),USE(?Fmt:Format:Prompt)
-                TEXT,AT(40,41,,90),FULL,USE(Fmt:Format),VSCROLL,FONT('Consolas',9)
+                TEXT,AT(40,41,,90),FULL,USE(Fmt:Format),VSCROLL,FONT('Consolas',10),TIP('Fmt:Format')
                 PROMPT('Format<13,10>Tokens<13,10>Only'),AT(7,135,,30),USE(?Fmt:TokFmt:Prompt)
-                TEXT,AT(40,136,,90),FULL,USE(Fmt:TokFmt),VSCROLL,FONT('Consolas',9)
+                TEXT,AT(40,136,,90),FULL,USE(Fmt:TokFmt),VSCROLL,FONT('Consolas',10),TIP('Fmt:TokFmt')
                 PROMPT('#Fields'),AT(7,231),USE(?Flds:FieldsFlat:Prompt)
-                TEXT,AT(40,232,,90),FULL,USE(Flds:FieldsFlat),VSCROLL,FONT('Consolas',9)
+                TEXT,AT(40,232,,90),FULL,USE(Flds:FieldsFlat),VSCROLL,FONT('Consolas',10), |
+                        TIP('Flds:FieldsFlat')
                 STRING('Strings parsed from the original input used to extract the data into Queues.'), |
                         AT(40,335),USE(?WtfIsParse)
             END
             TAB('FormatQ'),USE(?TabFormatQ),TIP('Debug Format() Parse')
-                TEXT,AT(8,20,,55),FULL,USE(Fmt:Format,, ?Fmt:Format:2),VSCROLL,FONT('Consolas',9)
+                TEXT,AT(8,20,,55),FULL,USE(Fmt:Format,, ?Fmt:Format:2),VSCROLL,FONT('Consolas',10), |
+                        TIP('Fmt:Format')
                 LIST,AT(8,82),FULL,USE(?LIST:FormatQ),VSCROLL,FONT(,9),FROM(FormatQ),FORMAT('26L(2)|' & |
                         'M~Pos 1~@n4@26L(2)|M~Pos 2~@n4@26L(2)|M~Len~@n-4@20L(2)|M~Fld#~@n2b@20L(2)|' & |
                         'M~Grp~@n-3b@200L(2)|M~FieldSpec~@s255@200L(2)|M~Token Spec~@s255@')
             END
             TAB('FieldQ'),USE(?TabFieldsQ),TIP('Debug #Fields() Parse')
                 TEXT,AT(8,26,,40),FULL,USE(Flds:FieldsFlat,, ?Flds:FieldsFlat:2),VSCROLL, |
-                        FONT('Consolas',9)
+                        FONT('Consolas',9),TIP('Flds:FieldsFlat')
                 LIST,AT(8,74),FULL,USE(?LIST:FieldsQ),VSCROLL,FONT(,9),FROM(FieldsQ),FORMAT('200L(2)' & |
                         '~#Fields~@s96@')
             END
