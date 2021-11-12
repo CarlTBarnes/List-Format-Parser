@@ -463,7 +463,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                     PROMPT('Picture'),AT(21,57),USE(?GenSim:Picture:Pmt)
                     COMBO(@s12),AT(51,56,49,11),USE(GenSim:Picture),VSCROLL,TIP('Can be Blank or Non' & |
                             'e which allows over 255 bytes'),DROP(9),FROM(' |s40|s80|s99|s255|n-9|n-' & |
-                            '11.2|None')
+                            '11.2|None'),FORMAT('1L(2)')
                     OPTION('Data Justification'),AT(109,33,91,42),USE(GenSim:JustLCR),BOXED
                         RADIO('Left'),AT(114,43),USE(?GenSim:JustLCR:Left),VALUE('L')
                         RADIO('Center'),AT(114,53),USE(?GenSim:JustLCR:Center),VALUE('C')

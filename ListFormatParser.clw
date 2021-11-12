@@ -1223,9 +1223,10 @@ NewPic STRING(20)
 PPic PSTRING(20)
 PX SHORT,AUTO
 FmtLong LONG
-FmtStr  STRING(32),AUTO
+FmtStr  STRING(96),AUTO
 S1      &STRING
 X       USHORT,AUTO
+NowLong LONG,AUTO
 PupTxt ANY
 PupNo  BYTE
 BtnX LONG,AUTO
@@ -1257,7 +1258,7 @@ DateRtn ROUTINE
               '|Separator{{Slash <9>/|Period <9>.|Comma <9>,|Hyphen <9>-|Space <9>_}' & |
               '|Blank{{00/00/00|Blank <9>B}' & |
             '}|-' 
-            
+    NowLong=TODAY() ! ; NowLong=DATE(1,1,1999)
     LOOP PX=1 TO 18
         pPic='@d' & DateZero & PX & DateSlash  & DateBlank
         IF PX=4 OR PX=18 THEN 
@@ -1265,6 +1266,8 @@ DateRtn ROUTINE
         ELSE
            FmtStr=FORMAT(FmtLong,PPic)
            DO mmddyyyyRtn
+           IF LEN(CLIP(FmtStr))<=5 THEN FmtStr=CLIP(FmtStr) &'<9>'. !mm/yy and yy/mm need extra tab to align
+           FmtStr=CLIP(FmtStr) &'<9>'& FORMAT(NowLong,PPic)
         END
         PupTxt=PupTxt & CHOOSE(Px=17,'|-|','|') &  CLIP(FmtStr) &'<9>'& pPic !&' = '& CLIP(FORMAT(FmtLong,PPic))
     END
@@ -1299,11 +1302,14 @@ TimeRtn ROUTINE
                'Leading{{Space|Zero}' & |
               '|Separator{{Colon <9>:|Period <9>.|Comma <9>,|Hyphen <9>-|Space <9>_}' & |
               '|Blank{{00:00:00|Blank <9>B}' & |
-            '}|-' 
+            '}|-'
+    NowLong=CLOCK() ! ; NowLong=4692301   ! 372301=1:02:03am  4319901=11:59:59  4692301=1:02:03pm
     LOOP PX=1 TO 8 
         pPic='@t' & TimeZero & PX & TimeColon  & TimeBlank
         FmtStr=FORMAT(FmtLong,PPic)
-        DO hhmmssRtn    
+        DO hhmmssRtn
+        IF LEN(CLIP(FmtStr))<=6 THEN FmtStr=CLIP(FmtStr) &'<9>'. !some need extra tab to align
+        FmtStr=CLIP(FmtStr) &'<9>'& FORMAT(NowLong,PPic)        
         PupTxt=PupTxt & CHOOSE(Px=7,'|-|','|') & CLIP(FmtStr) &'<9>'& pPic !&' = '& CLIP(FORMAT(FmtLong,PPic))
     END 
     PupNo=POPUP(PupTxt,BtnX,BtnY,1)
