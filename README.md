@@ -83,3 +83,16 @@ At the top of the tab List Format Preferences lets you customize many things. On
 Paste in a FILE structure and the FORMAT() and #FIELDS() are made for the Browse Template.
 
 ![Que2FmtFILE](images/format_qgen_file1.png)
+
+### FROM() String Parsing -- New November 2021
+
+On the first tab paste your LIST with a ```FROM('Choice One|#1|Choice Two|#2')```. You may also just paste the FROM() without a LIST, or paste a SPIN with a FROM().
+
+![FromParse](images/from0.png)
+
+Click "Process LIST" to parse and display on the new FROM tab.
+The "FROM() Lines" text control on the lower left has the FROM split and reformatted into one item per line with the |#Value (if present) on the same line.  This is formatted to be pasted back into the Window... Editor. When you need to edit the FROM it is easier when split to move lines, delete lines, edit text or add |#Values. It's also easier to read.
+
+On the lower right a ```CASE``` statement is generated with each ```OF 'Value'``` and a comment showing the number and full item text. Below that are two comma delimited lists with each Label or Value which could be used with ```INLIST() or CHOOSE()```.
+
+![FromParse](images/from1.png)
