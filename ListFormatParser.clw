@@ -16,6 +16,7 @@
 ! 28-Oct-2021  Que2Fmt allow multiple FILE for Browse Tpl
 !              Drag and Drop in GQ Fields Queue
 ! 12-Nov-2021  New FROM parsing of FROM('Choice 1|#1') to lines shows on new Tab('FROM')
+! 19-Nov-2021  Que2Fmt finds @Picture in NAME('xxx | @Picture')
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -1118,7 +1119,7 @@ HdrIndent  PSTRING(6)
             CHOOSE(~GenSim:Resize     ,'','M') & |
             CHOOSE(~GenSim:Colored    ,'','*') & |
             CHOOSE(~GenSim:CellStyle  ,'','Y') & |
-            CHOOSE(~HdrText ,'','~'& HdrText &'_'& ColX &' ~'& HdrJustify & HdrIndent) & |
+            CHOOSE(~HdrText ,'','~'& HdrText &'_'& ColX &'~'& HdrJustify & HdrIndent) & |
             CHOOSE(~GenSim:Picture OR lower(GenSim:Picture)='none','','@'& CLIP(GenSim:Picture) &'@') & |
             CHOOSE(~GenSim:FieldNumbered,'','#'& ColX &'#') & |
             CHOOSE(~GenSim:OnePerLine,'','<13,10>')
@@ -1348,6 +1349,8 @@ ALine STRING(256),AUTO
 PPart STRING(255),AUTO
 TPart STRING(255),AUTO
 TPartCO CSTRING(256),AUTO
+NamePart STRING(255),AUTO
+NamePic STRING(64),AUTO
 FType LIKE(GQFldQ:Type),AUTO
 Label_UPR STRING(64),AUTO
 FTypeOrig LIKE(GQFldQ:Type),AUTO
@@ -1415,6 +1418,20 @@ TakeFieldLineRtn ROUTINE
 
     TPart=LEFT(SUB(ALine,Space,999))    !ALine now TYPE()
     IF ~TPart THEN EXIT.                !No Type ???? just LABEL 
+    
+    !See: https://clarionhub.com/t/a-proposed-convention-for-the-extended-use-of-the-name-attribute/2792?u=carlbarnes
+    !     A Proposed Convention for the Extended use of the Name Attribute -- 10.8 Picture Formats - ... attribute that starts with the @ character.
+    !     
+    XX=STRPOS(TPart,'NAME *(.*\| *@',True)          !Does it have NAME('name | @picture | extended') ?
+    IF XX THEN
+       NamePart=SUB(TPart,XX,999)
+       XX=STRPOS(NamePart,'\| *@')                  !Find |@picture inside NAME()
+       NamePic=LEFT(SUB(NamePart,XX+1,99))          !Keep  @pic ...|')
+       XX=INSTRING('|',NamePic)                     !Find end Pipe |
+       IF ~XX THEN XX=INSTRING('''',NamePic).       !No Pipe find last Quote
+       IF XX THEN NamePic=SUB(NamePic,1,XX-1).      !Cutoff to leave just @pic
+       GQFldQ:BangPic='!'&NamePic                   !Format as !@pic
+    END                                             !Note: a !@pic below will superceded this
 
     LOOP 4 TIMES                      !Allow !Hide or !Omit and !@Picture
        BangX=INSTRING('!',TPart,1)    !A comment of !@xxxx overrides my Picture
@@ -1620,7 +1637,7 @@ ThisFieldNo SHORT !GQFldQ:FieldNo
             CHOOSE(~GenQue:Resize     ,'','M') & |
             CHOOSE(~GenQue:Colored    ,'','*') & |
             CHOOSE(~GenQue:CellStyle  ,'','Y') & | !            CHOOSE(~HdrText ,'','~'& HdrText &'_'& ColX &' ~'& HdrJustify & HdrIndent) & |
-            '~'& CLIP(GQFldQ:Label) &' ~'& HdrJustify & HdrIndent & |
+            '~'& CLIP(GQFldQ:Label) &'~'& HdrJustify & HdrIndent & |
             CHOOSE(~GQFldQ:Picture,'','@'& CLIP(GQFldQ:Picture) &'@') & |
             CHOOSE(~ThisFieldNo,'','#'& ThisFieldNo &'#') & |  !!! CHOOSE(~GenQue:FieldNo AND GQFldQ:FieldNo=1+LastFieldNo,'','#'& GQFldQ:FieldNo &'#') & |
             CHOOSE(~GenQue:OnePerLine,'','<13,10>')
@@ -1767,8 +1784,9 @@ GenFmt.BangPictureBtn PROCEDURE()
  CODE
  MESSAGE('Pictures are calculated based on Data Type and Preferences.'&|
      '||Override the picture with a !@ comment e.g. !@n_4b !@n7.2~%~'&|
-     '||Use !@D for the default Date or !@T for the default Time.'&|
-     '||Append !@OMIT or !OMIT to exclude the field from the format.'&|
+      '|Use !@D for the default Date or !@T for the default Time.'&|
+     '||Extended Attribute pictures can be used: NAME(''name ! @picture '')' &|
+     '||-{40}|Append !@OMIT or !OMIT to exclude the field from the format.'&|
      '|Append !@HIDE or !HIDE to make field width Zero to hide it.'&|
      '||Example:'&|
      '|LastRunTime  LONG  !@T4b'&|
