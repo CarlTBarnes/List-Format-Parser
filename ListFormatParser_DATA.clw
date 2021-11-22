@@ -158,7 +158,7 @@ BangPictureBtn   PROCEDURE()
 List:GQFieldsQ_TakeEvent    PROCEDURE()
         END
 !EndRegion -- Data for Generate Format Simple
-!Region -- Data for Generate Formatm Queue
+!Region -- Data for Generate Queue to Format 
 GenFmt_Queue   GROUP,PRE(GenQue)
 WidthMin            USHORT(20)              !GenQue:WidthMin
 WidthMax            USHORT(200)             !GenQue:WidthMax
@@ -210,11 +210,17 @@ TypeNums        STRING(32)    !GQFldQ:TypeNums      e.g. STRING( nums )
 BangPic         STRING(34)    !GQFldQ:BangPic       !@override picture
 Picture         STRING(32)    !GQFldQ:Picture
 CharsWide       STRING(5)     !GQFldQ:CharsWide
+Bracket         STRING(32)    !GQFldQ:Bracket       !Group '[ '=Begin ' ]'=End  ' ]Header Text
 TypeCode        STRING(48)    !GQFldQ:TypeCode
-Pre_Label       STRING(48)    !GQFldQ:Pre_Label        !Label with PRE or Q.
-Line            STRING(255)   !GQFldQ:Line            ![ ] allow  !@picture@
+Pre_Label       STRING(48)    !GQFldQ:Pre_Label     !Label with PRE or Q.
+Line            STRING(255)   !GQFldQ:Line
 Debug           STRING(255)   !GQFldQ:Debug
             END
+Bracket_Over  GROUP,PRE(),OVER(GQFldQ:Bracket)
+GQFldQ:Bracket_1_  STRING(1)                        ![  Open
+GQFldQ:Bracket_2_  STRING(1)                        ! ] Close
+GQFldQ:BracketText STRING(30)                       !  ~Header Text~
+              END
 eOmit_Omit EQUATE('Omit')  !Case sensitive for GQFldQ:OmitHow
 eOmit_Hide EQUATE('Hide')
 eOmit_NA_  EQUATE('N/A')
@@ -343,9 +349,10 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         'M~Label~C(0)26L(2)|M~Omit~C(0)@s4@Q''Omit from List with !Omit<13,10>Hide a' & |
                         's Zero Width with !Hide''34L(2)|M~TYPE~C(0)34L(2)|M~(nums)~C(0)32L(2)|M~!@P' & |
                         'ic~C(0)Q'' !@picture comment with on lines overrides calculated ''41L(2)|M~' & |
-                        'Picture~C(0)32R(2)|M~Chars~C(0)@s6@54L(2)|M~Type Code~60L(2)|M~Pre_Label~60' & |
-                        'L(2)|M~Code Line ~60L(2)|M~Debug~'),ALRT(CtrlUp), ALRT(CtrlDown), |
-                         ALRT(DeleteKey), ALRT(CtrlDelete), ALRT(InsertKey), ALRT(CtrlHome), ALRT(CtrlEnd)
+                        'Picture~C(0)32R(2)|M~Chars~C(0)@s6@17L(2)|M~[G]~C(0)Q''Group [ or ]''54L(2)' & |
+                        '|M~Type Code~60L(2)|M~Pre_Label~60L(2)|M~Code Line~60L(2)|M~Debug~'), |
+                        ALRT(CtrlUp), ALRT(CtrlDown), ALRT(DeleteKey), ALRT(CtrlDelete), |
+                         ALRT(InsertKey), ALRT(CtrlHome), ALRT(CtrlEnd)
                 PANEL,AT(10,201,,2),FULL,USE(?PanelAboveFmtQue),BEVEL(0,0,0600H)
                 GROUP('List Format Preferences'),AT(14,20,333,82),USE(?GemQue_Group),BOXED
                     GROUP,AT(17,30,92,64),USE(?GQUprLeftGROUP)

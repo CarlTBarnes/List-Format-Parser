@@ -17,6 +17,7 @@
 !              Drag and Drop in GQ Fields Queue
 ! 12-Nov-2021  New FROM parsing of FROM('Choice 1|#1') to lines shows on new Tab('FROM')
 ! 19-Nov-2021  Que2Fmt finds @Picture in NAME('xxx | @Picture')
+! 21-Nov-2021  Que2Fmt new List [Group] by having lines in source with [ ] or ![ !]
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -57,6 +58,7 @@ ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
 InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt, *LONG OutLeftPos, *LONG OutRightPos, <*STRING OutBetweenStr>),LONG,PROC !Returns -1 Not Found or Length Between may =0
 No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Clipped
 NoTabs              PROCEDURE(*STRING Txt)               !Change Tabs 09 to Space
+ReplaceInto         PROCEDURE(*STRING Into, STRING FindTxt,STRING ReplaceTxt,BYTE ClipInto=0),LONG,PROC !Return Count
 Picture_N_Width     PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture ),SHORT,PROC 
 PreviewList         PROCEDURE(STRING pListFormat)
 DB                  PROCEDURE(STRING DbTxt) 
@@ -1350,12 +1352,14 @@ PPart STRING(255),AUTO
 TPart STRING(255),AUTO
 TPartCO CSTRING(256),AUTO
 NamePart STRING(255),AUTO
-NamePic STRING(64),AUTO
+NamePic  STRING(64),AUTO
 FType LIKE(GQFldQ:Type),AUTO
 Label_UPR STRING(64),AUTO
 FTypeOrig LIKE(GQFldQ:Type),AUTO
 LikeWarned BYTE
 GQF_Prefix LIKE(GenQue_Pre)  !Normally from line 1 Queue/File but can change if 2nd file
+BracketOpening  LIKE(GQFldQ:Bracket)  !is '[heading'
+BracketOpenQueX SHORT                 !GQFieldsQ Index
     CODE
     FREE(GQFieldsQ)
     IF ~GenQue_TextQ THEN 
@@ -1371,15 +1375,17 @@ GQF_Prefix LIKE(GenQue_Pre)  !Normally from line 1 Queue/File but can change if 
     QX=-1
     LOOP TxtLineNo=1 TO ?GenQue_TextQ{PROP:LineCount}
         ALine=?GenQue_TextQ{PROP:Line,TxtLineNo}
+        DO TakeBracketGroupInAlineRtn
         IF ALine[1]='' OR LEFT(ALine,2)='. ' OR LEFT(ALine,1)='! ' |
         OR UPPER(LEFT(ALine,4))='END ' THEN CYCLE.
-
         IF QX = -1 THEN
            DO TakeFirstLineRtn
         ELSE
            DO TakeFieldLineRtn
         END
-
+    END
+    IF BracketOpenQueX THEN
+       ALine=']Left Open' ; DO TakeBracketGroupInAlineRtn
     END
     DISPLAY
     RETURN
@@ -1561,9 +1567,36 @@ TakeFieldLineRtn ROUTINE
     END
     !GQFldQ:Picture = '-?-' !was =Pic_Fld   
 
-    IF QX=-1 THEN EXIT.      !The Queue Line
+    IF QX=-1 THEN EXIT.      !The Queue Line 1st in
+    IF BracketOpening[1] AND ~BracketOpenQueX THEN   !Inside [Bracket is this the Next Variable Line? i.e. QueX=0
+       GQFldQ:Bracket = BracketOpening               !Store the [ in the GQ Field record
+       BracketOpenQueX = QX+1
+    END
     ADD(GQFieldsQ)
     QX += 1
+    EXIT
+TakeBracketGroupInAlineRtn ROUTINE !Does ALine have [Group]
+    CASE ALine[1:2]
+    OF '![' OROF '!]' ; ALine=SUB(ALine,2,99)   !Change ![ to [ , or !] to ]
+    ELSE
+        IF ~INSTRING(ALine[1],'[]') THEN EXIT.  !Line is NOT a ![ !] [ ]
+    END
+    TPart=ALine ; ALine=''
+    CASE TPart[1]
+    OF '['
+        IF INSTRING(']',TPart) THEN EXIT.     !Was ![xxxx] assume Pasted Embed NOT Group [
+        BracketOpening=TPart[1] &' '& SUB(TPart,2,99)
+        BracketOpenQueX=0
+    OF ']'
+        IF BracketOpenQueX THEN                                     !Must have had open [
+           IF TPart=']' THEN TPart=']' & SUB(BracketOpening,2,99).  !Line is =']' add open's "[Heading text"
+           ReplaceInto(TPart,'~',' ') !No Tildes in ~Head~
+           GQFldQ:Bracket_2_ =']'
+           GQFldQ:BracketText=LEFT(SUB(TPart,2,99))
+           PUT(GQFieldsQ)
+        END
+        BracketOpenQueX=0 ; BracketOpening=''
+    END
     EXIT
 !------------------------------------------------
 GenFmt.QueueAutoGenerate PROCEDURE()  !Generate if GenQue:AutoGenerate checked and have RECORDS GQFieldsQ
@@ -1594,9 +1627,12 @@ ThisFieldNo SHORT !GQFldQ:FieldNo
     IF ~InRange(GenQue:Digits_BOOL ,1,10) THEN GenQue:Digits_BOOL =1.    
     IF ~GenQue:JustLCR THEN GenQue:JustLCR='L'.
     HdrText='Column_'
-    LOOP ColX=1 TO RECORDS(GQFieldsQ) 
-        GET(GQFieldsQ,ColX)
-        IF GQFldQ:OmitHow AND GQFldQ:OmitHow<>eOmit_Hide THEN CYCLE.   !No output GROUP or &REF when 'N/A' or 'Omit'
+    LOOP ColX=1 TO RECORDS(GQFieldsQ)
+        GET(GQFieldsQ,ColX)                      !Get Next GQ record
+        IF GQFldQ:Bracket_1_ = '[' THEN          !Is [Group] open?
+           GenQue_Format = CLIP(GenQue_Format) &'[<13,10>'
+        END
+        IF GQFldQ:OmitHow AND GQFldQ:OmitHow<>eOmit_Hide THEN GOTO OmitFieldLabel:.   !No output GROUP or &REF when 'N/A' or 'Omit'
         DO FillInGQFieldsQRtn
         PUT(GQFieldsQ)
         CASE LOWER(GQFldQ:Picture[1]) 
@@ -1644,6 +1680,17 @@ ThisFieldNo SHORT !GQFldQ:FieldNo
         GenQue_Format = CLIP(GenQue_Format) & Fmt
         GenQue_FIELDS = CLIP(GenQue_FIELDS) & CHOOSE(ColX=1,'',', ') & GQFldQ:Pre_Label
         LastFieldNo = GQFldQ:FieldNo
+OmitFieldLabel:
+        IF GQFldQ:Bracket_2_=']' THEN !End ] List Group?
+           Fmt=CLIP(LEFT(GQFldQ:BracketText))
+           IF ~Fmt THEN Fmt='Group'.
+           Fmt=']' & |                                  !FYI "](123)" specifies Group Width=123, best NOT used
+               CHOOSE(~GenQue:Underline  ,'','_') & |   !FYI "|" "M" also possible but better on Field
+               CHOOSE(~GenQue:Fixed      ,'','F') & |
+               '~'& Fmt &'~'& |                         !FYI align L(2) R(2) possible after ~Group Head~
+               CHOOSE(~GenQue:OnePerLine,'','<13,10>')
+           GenQue_Format = CLIP(GenQue_Format) & Fmt
+        END
     END
     GenQue_FIELDS = CLIP(GenQue_FIELDS) & ')'
     DISPLAY
@@ -1786,9 +1833,13 @@ GenFmt.BangPictureBtn PROCEDURE()
      '||Override the picture with a !@ comment e.g. !@n_4b !@n7.2~%~'&|
       '|Use !@D for the default Date or !@T for the default Time.'&|
      '||Extended Attribute pictures can be used: NAME(''name ! @picture '')' &|
-     '||-{40}|Append !@OMIT or !OMIT to exclude the field from the format.'&|
+     '|-{40}|Append !@OMIT or !OMIT to exclude the field from the format.'&|
      '|Append !@HIDE or !HIDE to make field width Zero to hide it.'&|
-     '||Example:'&|
+     '|-{40}|List Groups can be speficied by putting [ and ] in the declarion.'&|
+     '|    Put [ or ![ in column 1 on the line BEFORE the FIRST data field.'&|
+     '|    Put ] or !] in column 1 on the line AFTER the LAST data field.'&|
+     '|    Put "Heading Text" after the ] e.g. ]Last Modified'&|
+     '|-{40}|Example:'&|
      '|LastRunTime  LONG  !@T4b'&|
      '|MeaningLess  LONG  !OMIT', 'Format Generation Picture', ICON:Help)    
 !----------------------------------    
@@ -2000,8 +2051,10 @@ GenQueRtn ROUTINE
            'DirQ  QUEUE,PRE(DirQ)   !Example of File:Queue' &|
     '<13,10>Name       STRING(255)' &|
     '<13,10>ShortName  STRING(13)  !Hide' &|
+         '<13,10>![' &|
     '<13,10>Date       LONG        !@d8' &|
     '<13,10>Time       LONG' &|
+         '<13,10>!]Last Modified' &|
     '<13,10>Size       LONG' &|
     '<13,10>Attrib     BYTE        !Omit' &|
     '<13,10>      END' & | 
@@ -2101,6 +2154,23 @@ N LONG,AUTO
         END
     END
     RETURN
+ReplaceInto PROCEDURE(*STRING Into, STRING Find,STRING Repl,BYTE ClipInto=0)!,LONG,PROC !Return Count
+X   LONG,AUTO
+L   LONG,AUTO
+szI LONG,AUTO   
+szF LONG,AUTO   
+szR LONG,AUTO
+FindCnt LONG   
+  CODE !From ABError, tweaked a LOT. Supports replace the same char e.g. 10 to 13,10
+  Find=lower(Find) ; L=1 ; szI=SIZE(Into) ; szF=SIZE(Find) ; szR=SIZE(Repl)  
+  IF NOT(Find=lower(Repl) AND szF=szR) THEN 
+     LOOP
+       IF ClipInto THEN X=INSTRING(Find,CLIP(lower(Into)),1,L) ELSE X=INSTRING(Find,lower(Into),1,L).
+       IF ~X THEN BREAK.
+       Into=SUB(Into,1,X-1) & Repl & SUB(Into,X+szF,szI) ; L=X+szR ; FindCnt+=1
+     END
+  END
+  RETURN FindCnt
 !================================
 Picture_N_Width  PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture )!,SHORT,PROC 
 PicWidth SHORT,AUTO
