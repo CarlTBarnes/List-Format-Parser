@@ -484,8 +484,8 @@ CsvValues  CSTRING(1000)
          CsvValues=CHOOSE(CX=1,'',CsvValues&',') &''''& SUB(FCaseQ:Item,FCaseQ:ValuePos, FCaseQ:ValueLen) &''''
     END
     From:CASE = CLIP(From:CASE) &   '<13,10>END' &|
-                             '<13,10><13,10>! '& CsvLabels  & |       !For INLIST or CHOOSE
-      CHOOSE(CsvValues=CsvLabels,'','<13,10>! '& CsvValues) &'<13,10>'
+                             '<13,10><13,10>!Choices: '& CsvLabels  & |       !For INLIST or CHOOSE
+      CHOOSE(CsvValues=CsvLabels,'','<13,10>!Values:  '& CsvValues) &'<13,10>'
     EXIT
 !--------------------
 AddHistoryRtn ROUTINE
@@ -1078,15 +1078,16 @@ HelpCls.Init2   PROCEDURE()
      '<13,10>' &|
      '<13,10>If BarFrame color matches the Selection Bar color, ' &|
      '<13,10>the focus rectangle is not drawn if List has focus.'  ! Length = 718
-     
-    !HelpSyntax 
-    HelpSyntax = 'Width      PROPLIST:Width    Width of the Column or Group in DLUs' &|
-     '<13,10>Justify L  PROPLIST:Left     Left align    (Indent) PROPLIST:LeftOffset' &|
-     '<13,10>Justify R  PROPLIST:Right    Right align   (Indent) PROPLIST:RightOffset' &|
-     '<13,10>Justify C  PROPLIST:Center   Center align  (Indent) PROPLIST:CenterOffset' &|
-     '<13,10>Justify D  PROPLIST:Decimal  Decimal align (Indent) PROPLIST:DecimalOffset' &|
-     '<13,10>Indent ()  PROPLIST:xOffset  Indent / Offset from Justification' &|
-     '<13,10>Modifiers  PROPLIST:xxxxxxx  Characters (listed below) to modify display format'  ! Length = 509 
+
+    HelpFormat=' Column: Width Justification LRCD (Indent) Modifiers ~CellHead~ Justify(IndentHead) @picture@ ' &|
+        '<13,10> Group:  [Columns] (GroupWidth) Modifiers ~GroupHead~Justification(IndentHead)'
+    HelpSyntax = ' Width      PROPLIST:Width    Width of the Column or Group in DLUs' &|
+     '<13,10> Justify L  PROPLIST:Left     Left align    (Indent) PROPLIST:LeftOffset' &|
+     '<13,10> Justify R  PROPLIST:Right    Right align   (Indent) PROPLIST:RightOffset' &|
+     '<13,10> Justify C  PROPLIST:Center   Center align  (Indent) PROPLIST:CenterOffset' &|
+     '<13,10> Justify D  PROPLIST:Decimal  Decimal align (Indent) PROPLIST:DecimalOffset' &|
+     '<13,10> Indent ()  PROPLIST:xOffset  Indent / Offset from Justification' &|
+     '<13,10> Modifiers  PROPLIST:xxxxxxx  Characters (listed below) to modify display format'  ! Length = 509 
    
 !================================================ 
 GenFmt.SimpleGen PROCEDURE()
@@ -1375,8 +1376,9 @@ BracketOpenQueX SHORT                 !GQFieldsQ Index
     QX=-1
     LOOP TxtLineNo=1 TO ?GenQue_TextQ{PROP:LineCount}
         ALine=?GenQue_TextQ{PROP:Line,TxtLineNo}
+        IF LEFT(ALine,1)='!' THEN ALine=LEFT(ALine).                !Put !Comment in Column 1 for ![
         DO TakeBracketGroupInAlineRtn
-        IF ALine[1]='' OR LEFT(ALine,2)='. ' OR LEFT(ALine,1)='! ' |
+        IF ALine[1]='' OR LEFT(ALine,2)='. ' OR LEFT(ALine,1)='!' |
         OR UPPER(LEFT(ALine,4))='END ' THEN CYCLE.
         IF QX = -1 THEN
            DO TakeFirstLineRtn
@@ -1630,7 +1632,7 @@ ThisFieldNo SHORT !GQFldQ:FieldNo
     LOOP ColX=1 TO RECORDS(GQFieldsQ)
         GET(GQFieldsQ,ColX)                      !Get Next GQ record
         IF GQFldQ:Bracket_1_ = '[' THEN          !Is [Group] open?
-           GenQue_Format = CLIP(GenQue_Format) &'[<13,10>'
+           GenQue_Format = CLIP(GenQue_Format) &'['& CHOOSE(~GenQue:OnePerLine,'','<13,10>')
         END
         IF GQFldQ:OmitHow AND GQFldQ:OmitHow<>eOmit_Hide THEN GOTO OmitFieldLabel:.   !No output GROUP or &REF when 'N/A' or 'Omit'
         DO FillInGQFieldsQRtn

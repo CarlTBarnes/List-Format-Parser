@@ -96,7 +96,8 @@ Init2       PROCEDURE()
 Add1Q       PROCEDURE(STRING _Char, STRING _Type, STRING _Prop, STRING _Name, STRING _Desc)
 Set1QDesc   PROCEDURE(STRING _Char, STRING _Desc)
         END
-HelpSyntax      STRING(2000)
+HelpSyntax      STRING(200)
+HelpWidth       STRING(600)
 HelpModOrder    STRING(1600)
 
 ModifierQ   QUEUE,PRE(ModQ)     !LIST Modifiers
@@ -311,13 +312,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         '55@/20L(2)|_FM~    FORMAT    (Double-Click on a Line to Reload)~@s255@]|F')
             END
             TAB(' LIST &Help '),USE(?TabHelp),TIP('List Format and Modifiers Help')
-                PROMPT(' Group: [Cells] (GroupSize) Modifiers ~GroupHead~Justification(IndentHead) '), |
-                        AT(10,22,489,10),USE(?HelpSyntaxGroup),FONT('Consolas',9,COLOR:Black), |
-                        COLOR(COLOR:White)
-                PROMPT(' Cell:  Width Justification LRCD (Indent) Modifiers ~CellHead~ Justify(Inden' & |
-                        'tHead) @picture@ '),AT(10,32,489,10),USE(?HelpSyntaxCell),FONT('Consolas', |
-                        9,COLOR:Black),COLOR(COLOR:White)
-                TEXT,AT(10,49,489,64),USE(HelpSyntax),SKIP,VSCROLL,FONT('Consolas',9),READONLY
+                TEXT,AT(10,22,489,20),USE(HelpSyntax),SKIP,FONT('Consolas',9),READONLY                        
+                TEXT,AT(10,48,489,64),USE(HelpWidth),SKIP,FONT('Consolas',9),READONLY
                 LIST,AT(10,118,310),FULL,USE(?List:ModifierQ),VSCROLL,FROM(ModifierQ),FORMAT('22L(3)' & |
                         '|M~Mod~C(0)@s4@Z(1)71L(3)|M~PROPLIST:~L(2)@s100@Z(2)29L(3)|M~Type~C(0)@s5@1' & |
                         '49L(3)~Modifier Description (click to sort)~L(2)@s60@'),ALRT(CtrlC), |
@@ -427,7 +423,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                     CHECK('Field No. #'),AT(275,89),USE(GenQue:FieldNumbered),TIP('Add # Field No # ' & |
                             'to all columns')
                     CHECK('1 Column / Line'),AT(279,116,68),USE(GenQue:OnePerLine),SKIP,LEFT, |
-                            TIP('One Column Per Line')
+                            TIP('One Column per Line is much easier to read')
                     CHECK('Auto Generate'),AT(279,105,68),USE(GenQue:AutoGenerate),LEFT,TIP('Generat' & |
                             'e Format on any chnage to format specs')
                 END
