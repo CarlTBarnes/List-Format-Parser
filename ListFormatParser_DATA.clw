@@ -120,7 +120,7 @@ Columns             BYTE(9)                 !GenSim:Columns
 Width               USHORT(80)              !GenSim:Width
 JustLCR             STRING('L')             !GenSim:JustLCR
 Indent              SHORT(2)                !GenSim:Indent          ()
-Picture             STRING(16)              !GenSim:Picture         @ @
+Picture             STRING('s255 {8}')      !GenSim:Picture         @ @
 RightBorder         BYTE(1)                 !GenSim:RightBorder     |
 Underline           BYTE                    !GenSim:Underline       _
 Fixed               BYTE                    !GenSim:Fixed           F
