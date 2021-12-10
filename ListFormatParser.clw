@@ -1079,9 +1079,9 @@ HelpCls.Init2   PROCEDURE()
      '<13,10>If BarFrame color matches the Selection Bar color, ' &|
      '<13,10>the focus rectangle is not drawn if List has focus.'  ! Length = 718
 
-    HelpFormat=' Column: Width Justification LRCD (Indent) Modifiers ~CellHead~ Justify(IndentHead) @picture@ ' &|
+    HelpSyntax=' Column: Width Justification LRCD (Indent) Modifiers ~CellHead~ Justify(IndentHead) @picture@ ' &|
         '<13,10> Group:  [Columns] (GroupWidth) Modifiers ~GroupHead~Justification(IndentHead)'
-    HelpSyntax = ' Width      PROPLIST:Width    Width of the Column or Group in DLUs' &|
+    HelpWidth = ' Width      PROPLIST:Width    Width of the Column or Group in DLUs' &|
      '<13,10> Justify L  PROPLIST:Left     Left align    (Indent) PROPLIST:LeftOffset' &|
      '<13,10> Justify R  PROPLIST:Right    Right align   (Indent) PROPLIST:RightOffset' &|
      '<13,10> Justify C  PROPLIST:Center   Center align  (Indent) PROPLIST:CenterOffset' &|
