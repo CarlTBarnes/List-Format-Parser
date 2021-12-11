@@ -294,8 +294,9 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 BUTTON,AT(12,142,18,18),USE(?FromInLinesCopyBtn),SKIP,ICON(ICON:Copy),TIP('Copy FORM' & |
                         '() in Lines to Clipboard')
                 BUTTON('Align #'),AT(4,185,31,18),USE(?FromAlignValueBtn),SKIP,TIP('Align #Values')
-                BUTTON('Align "'),AT(4,215,31,18),USE(?FromAlignQuoteBtn),SKIP,TIP('Undo Align #Values by Align Left Quotes')
-                BUTTON('&ReRun'),AT(4,261,31,18),USE(?RunAgainFromBtn),SKIP,TIP('Run Another Instance')
+                BUTTON('Align "'),AT(4,210,31,18),USE(?FromAlignQuoteBtn),SKIP,TIP('Undo Align #Values by Align Left Quotes')
+                BUTTON('Split #'),AT(4,245,31,18),USE(?FromSplitValueBtn),SKIP,TIP('#Values Split into separate String and Aligned')
+                BUTTON('&ReRun'),AT(4,290,31,18),USE(?RunAgainFromBtn),SKIP,TIP('Run Another Instance')
             END
             TAB(' LIST Lines '),USE(?TabListLines),TIP('All LIST attributes parsed as one per line')
                 BUTTON('Copy LIST'),AT(61,22,55,22),USE(?CopyListLineFmtBtn),SKIP,ICON(ICON:Copy), |

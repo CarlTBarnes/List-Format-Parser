@@ -19,7 +19,8 @@
 ! 19-Nov-2021  Que2Fmt finds @Picture in NAME('xxx | @Picture')
 ! 21-Nov-2021  Que2Fmt new List [Group] by having lines in source with [ ] or ![ !]
 ! 11-Dec-2021  FROM make first and last code lines '' to allow moving lines easier, thanks Mike
-!              FROM tab 'Align #' button aligns #Values, 'Align "' undoes
+!              FROM Tab 'Align #' button aligns #Values, 'Align "' undoes
+!              FROM Tab 'Split #' button splits 'Item|#Value' into 'Item' &'|#Value' and aligns
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -170,6 +171,7 @@ Tabs1Line       BOOL
         OF ?FromInLinesCopyBtn    ; SETCLIPBOARD(From:InLines)
         OF ?FromAlignValueBtn     ; DO FROM_AlignValue_Rtn
         OF ?FromAlignQuoteBtn     ; DO FROM_AlignQuote_Rtn
+        OF ?FromSplitValueBtn     ; DO FROM_SplitValue_Rtn
 
         OF ?LIST:HistoryQ
             IF KEYCODE()=MouseLeft2 THEN 
@@ -531,6 +533,36 @@ NewFrom LIKE(From:InLines)
            ELSE         ; Spaces=7
            END
            ALine=ALL(' ',Spaces) & LEFT(ALine) 
+        END
+        NewFrom=CHOOSE(LX=1,'',CLIP(NewFrom)&'<13,10>') & ALine
+   END
+   From:InLines=NewFrom ; DISPLAY
+   EXIT
+!--------------------
+FROM_SplitValue_Rtn ROUTINE !12/11/21 Align the # signs  ?FromAlignValueBtn
+   DATA
+LX LONG
+PndPos  LONG
+MaxPnd  LONG
+ALine   STRING(255)
+NewFrom LIKE(From:InLines)
+   CODE
+   DO FROM_AlignQuote_Rtn
+   LOOP LX=1 TO ?From:InLines{PROP:LineCount}
+        ALine=?From:InLines{PROP:Line,LX}
+        PndPos=INSTRING('|#',ALine,1)                   !Find |#  in 'Single|#S'
+        IF ~PndPos THEN CYCLE.
+        IF SUB(ALine,PndPos-2,4)='&''|#' THEN CYCLE.    !Already done
+        IF PndPos > MaxPnd THEN MaxPnd = PndPos.
+   END
+   IF MaxPnd=0 THEN EXIT.
+   LOOP LX=1 TO ?From:InLines{PROP:LineCount}
+        ALine=?From:InLines{PROP:Line,LX}
+        PndPos=INSTRING('|#',ALine,1)
+        IF PndPos AND SUB(ALine,PndPos-2,4) <> '&''|#' THEN
+           ALine=SUB(ALine,1,PndPos-1) & |
+                 '''' & ALL(' ',MaxPnd-PndPos) & ' &''' & | 
+                 SUB(ALine,PndPos,255) 
         END
         NewFrom=CHOOSE(LX=1,'',CLIP(NewFrom)&'<13,10>') & ALine
    END
