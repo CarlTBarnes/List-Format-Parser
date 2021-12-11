@@ -18,6 +18,7 @@
 ! 12-Nov-2021  New FROM parsing of FROM('Choice 1|#1') to lines shows on new Tab('FROM')
 ! 19-Nov-2021  Que2Fmt finds @Picture in NAME('xxx | @Picture')
 ! 21-Nov-2021  Que2Fmt new List [Group] by having lines in source with [ ] or ![ !]
+! 11-Dec-2021  FROM make first and last code lines '' to allow moving lines easier, thanks Mike
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -409,7 +410,7 @@ Parse_FROM_Rtn ROUTINE !FROM('Name|#Value') Parsing added 11/10/21
 FX LONG
 F1 LONG
 CX LONG
-LenFrom LONG             !' FROM(
+LenFrom LONG             !' FROM('
 FNewLine STRING(' &|<13,10>      ')
 FromIsLast BOOL
 FItem PSTRING(256)
@@ -438,7 +439,7 @@ CsvValues  CSTRING(1000)
     From:FROM = LEFT(ListFlat[From:Quote1 + 1 : From:Quote2 - 1] )
     IF SUB(ListFlat,From:Paren2+1,9999)<='' THEN FromIsLast=True.
     IF ~From:FROM THEN EXIT.
-    From:InLines=' , |<13,10>  FROM('
+    From:InLines=' , |<13,10> FROM(<39,39>'
     F1=1
     LenFrom=LEN(CLIP(From:FROM))
     LOOP FX=2 TO LenFrom+1
@@ -448,7 +449,7 @@ CsvValues  CSTRING(1000)
          AND From:FROM[FX+1] <> '#' ) THEN  !The |#Value remains on the same line
              FItem=From:FROM[F1 : FX-1]
              From:InLines=CLIP(From:InLines) & |             ! Prior |strings
-                          CHOOSE(F1=1,'',FNewLine) &|        ! &|<13,10>
+                          FNewLine & CHOOSE(F1=1,' ','') & | ! &|<13,10>
                           ''''& FItem &''''   !  |Next String|#Value
              IF F1>1 THEN FItem=SUB(FItem,2,LEN(FItem)-1). !'|String' now 'String'
              FCaseQ:Item = FItem                !Build CaseQ so can generate CASE OF #Value
@@ -468,7 +469,7 @@ CsvValues  CSTRING(1000)
              F1 = FX
          END
     END
-    From:InLines=CLIP(From:InLines) &')'& CHOOSE(~FromIsLast,', |','')
+    From:InLines=CLIP(From:InLines) & FNewLine &'<39,39>)'& CHOOSE(~FromIsLast,', |','')
     From:CASE='CASE ListUseVariable'
     IF ParserCls.FindAttrParen(ListFlat, 'USE', Use:BegPos, Use:Paren1, Use:Paren2, CX, CX) |
     AND Use:Paren2 > Use:Paren1 THEN
