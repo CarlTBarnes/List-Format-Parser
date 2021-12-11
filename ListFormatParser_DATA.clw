@@ -293,7 +293,9 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 TEXT,AT(280,107),FULL,USE(From:CASE),HVSCROLL,FONT('Consolas',10)
                 BUTTON,AT(12,142,18,18),USE(?FromInLinesCopyBtn),SKIP,ICON(ICON:Copy),TIP('Copy FORM' & |
                         '() in Lines to Clipboard')
-                BUTTON('&ReRun'),AT(5,201,29,18),USE(?RunAgainFromBtn),SKIP,TIP('Run Another Instance')
+                BUTTON('Align #'),AT(4,185,31,18),USE(?FromAlignValueBtn),SKIP,TIP('Align #Values')
+                BUTTON('Align "'),AT(4,215,31,18),USE(?FromAlignQuoteBtn),SKIP,TIP('Undo Align #Values by Align Left Quotes')
+                BUTTON('&ReRun'),AT(4,261,31,18),USE(?RunAgainFromBtn),SKIP,TIP('Run Another Instance')
             END
             TAB(' LIST Lines '),USE(?TabListLines),TIP('All LIST attributes parsed as one per line')
                 BUTTON('Copy LIST'),AT(61,22,55,22),USE(?CopyListLineFmtBtn),SKIP,ICON(ICON:Copy), |

@@ -19,6 +19,7 @@
 ! 19-Nov-2021  Que2Fmt finds @Picture in NAME('xxx | @Picture')
 ! 21-Nov-2021  Que2Fmt new List [Group] by having lines in source with [ ] or ![ !]
 ! 11-Dec-2021  FROM make first and last code lines '' to allow moving lines easier, thanks Mike
+!              FROM tab 'Align #' button aligns #Values, 'Align "' undoes
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -167,6 +168,8 @@ Tabs1Line       BOOL
         OF ?ListParsedHScrollOff  ; ?ListParsed{PROP:HScroll}=CHOOSE(~ListParsedHScrollOff,'1','') ; DISPLAY 
         OF ?FromFromCopyBtn       ; SETCLIPBOARD(From:From)
         OF ?FromInLinesCopyBtn    ; SETCLIPBOARD(From:InLines)
+        OF ?FromAlignValueBtn     ; DO FROM_AlignValue_Rtn
+        OF ?FromAlignQuoteBtn     ; DO FROM_AlignQuote_Rtn
 
         OF ?LIST:HistoryQ
             IF KEYCODE()=MouseLeft2 THEN 
@@ -488,6 +491,51 @@ CsvValues  CSTRING(1000)
                              '<13,10><13,10>!Choices: '& CsvLabels  & |       !For INLIST or CHOOSE
       CHOOSE(CsvValues=CsvLabels,'','<13,10>!Values:  '& CsvValues) &'<13,10>'
     EXIT
+!--------------------
+FROM_AlignValue_Rtn ROUTINE !12/11/21 Align the # signs  ?FromAlignValueBtn
+   DATA
+LX LONG
+PndPos  LONG
+MaxPnd  LONG
+ALine   STRING(255)
+NewFrom LIKE(From:InLines)
+   CODE
+   LOOP LX=1 TO ?From:InLines{PROP:LineCount}
+        PndPos=INSTRING('|#',?From:InLines{PROP:Line,LX} ,1)
+        IF PndPos > MaxPnd THEN MaxPnd = PndPos.
+   END
+   IF MaxPnd=0 THEN EXIT.
+   LOOP LX=1 TO ?From:InLines{PROP:LineCount}
+        ALine=?From:InLines{PROP:Line,LX}
+        PndPos=INSTRING('|#',ALine,1)
+        NewFrom=CHOOSE(LX=1,'',CLIP(NewFrom)&'<13,10>') & |
+                CHOOSE(~PndPos OR PndPos >= MaxPnd,'', ALL(' ',MaxPnd-PndPos) ) & |
+                ALine
+   END
+   From:InLines=NewFrom ; DISPLAY
+   EXIT
+!--------------------
+FROM_AlignQuote_Rtn ROUTINE !12/11/21 Undo Align # by Align Quotes  ?FromAlignValueBtn
+   DATA
+LX LONG
+Spaces  LONG
+ALine   STRING(255)
+NewFrom LIKE(From:InLines)
+   CODE
+   LOOP LX=1 TO ?From:InLines{PROP:LineCount}
+        ALine=?From:InLines{PROP:Line,LX}
+        IF LEFT(ALine,1)='''' THEN   !Quote line
+           CASE LEFT(ALine,2)
+           OF '''|'     ; Spaces=6       !Assume '|xxxx
+           OF ''''''    ; Spaces=6       !Final  '')
+           ELSE         ; Spaces=7
+           END
+           ALine=ALL(' ',Spaces) & LEFT(ALine) 
+        END
+        NewFrom=CHOOSE(LX=1,'',CLIP(NewFrom)&'<13,10>') & ALine
+   END
+   From:InLines=NewFrom ; DISPLAY
+   EXIT
 !--------------------
 AddHistoryRtn ROUTINE
     DATA
