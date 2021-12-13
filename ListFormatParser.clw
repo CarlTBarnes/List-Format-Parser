@@ -1322,7 +1322,10 @@ DateBlank PSTRING(2),STATIC
 TimeZero  PSTRING(2),STATIC
 TimeColon PSTRING(2),STATIC
 TimeBlank PSTRING(2),STATIC
-    CODE 
+MrkDn ANY      
+GenMD EQUATE(0)  !Gen Markdown Table of Pictures for my GitHub
+    CODE
+    MrkDn='| Picture | Format | Example |<13,10>|--|--|--|'
     GETPOSITION(?,BtnX,BtnY)
     LOOP
        NewPic=''
@@ -1335,6 +1338,7 @@ TimeBlank PSTRING(2),STATIC
        CHANGE(FEQ,NewPic)
        POST(EVENT:Accepted,FEQ)
     END
+    IF GenMD THEN SETCLIPBOARD(MrkDn &'<13,10,13,10>'& PupTxt) ; Message('MD on Clip').
     RETURN
 DateRtn ROUTINE
     FmtLong=DATE(11,22,3333)
@@ -1343,14 +1347,16 @@ DateRtn ROUTINE
               '|Separator{{Slash <9>/|Period <9>.|Comma <9>,|Hyphen <9>-|Space <9>_}' & |
               '|Blank{{00/00/00|Blank <9>B}' & |
             '}|-' 
-    NowLong=TODAY() ! ; NowLong=DATE(1,1,1999)
+    NowLong=TODAY() ; IF GenMD THEN NowLong=DATE(12,25,2021).
     LOOP PX=1 TO 18
         pPic='@d' & DateZero & PX & DateSlash  & DateBlank
         IF PX=4 OR PX=18 THEN 
            FmtStr=FORMAT(TODAY(),PPic)
+           MrkDn=MrkDn &'<13,10>| '& pPic &' | Long Date | '& FORMAT(NowLong,PPic) &' |'
         ELSE
            FmtStr=FORMAT(FmtLong,PPic)
            DO mmddyyyyRtn
+           MrkDn=MrkDn &'<13,10>| '& pPic &' | '& CLIP(FmtStr) &' | '& FORMAT(NowLong,PPic) &' |'
            IF LEN(CLIP(FmtStr))<=5 THEN FmtStr=CLIP(FmtStr) &'<9>'. !mm/yy and yy/mm need extra tab to align
            FmtStr=CLIP(FmtStr) &'<9>'& FORMAT(NowLong,PPic)
         END
@@ -1388,11 +1394,12 @@ TimeRtn ROUTINE
               '|Separator{{Colon <9>:|Period <9>.|Comma <9>,|Hyphen <9>-|Space <9>_}' & |
               '|Blank{{00:00:00|Blank <9>B}' & |
             '}|-'
-    NowLong=CLOCK() ! ; NowLong=4692301   ! 372301=1:02:03am  4319901=11:59:59  4692301=1:02:03pm
+    NowLong=CLOCK()  ; IF GenMD THEN NowLong=4529601.   ! 372301=1:02:03am  4319901=11:59:59 4529601=12:34:56 4692301=1:02:03pm
     LOOP PX=1 TO 8 
         pPic='@t' & TimeZero & PX & TimeColon  & TimeBlank
         FmtStr=FORMAT(FmtLong,PPic)
         DO hhmmssRtn
+        MrkDn=MrkDn &'<13,10>| '& pPic &' | '& CLIP(FmtStr) &' | '& FORMAT(NowLong,PPic) &' |'
         IF LEN(CLIP(FmtStr))<=6 THEN FmtStr=CLIP(FmtStr) &'<9>'. !some need extra tab to align
         FmtStr=CLIP(FmtStr) &'<9>'& FORMAT(NowLong,PPic)        
         PupTxt=PupTxt & CHOOSE(Px=7,'|-|','|') & CLIP(FmtStr) &'<9>'& pPic !&' = '& CLIP(FORMAT(FmtLong,PPic))
