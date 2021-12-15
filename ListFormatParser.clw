@@ -21,6 +21,7 @@
 ! 11-Dec-2021  FROM make first and last code lines '' to allow moving lines easier, thanks Mike
 !              FROM Tab 'Align #' button aligns #Values, 'Align "' undoes
 !              FROM Tab 'Split #' button splits 'Item|#Value' into 'Item' &'|#Value' and aligns
+! 15-Dec-2021  Que2Fmt Picture Popup for Date @d / Time @t added @n to show Serial Number e.g. 12/15/21=80706
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -1314,6 +1315,7 @@ X       USHORT,AUTO
 NowLong LONG,AUTO
 PupTxt ANY
 PupNo  BYTE
+PupPic STRING(8),DIM(19)    !@Picture for each Pop Item
 BtnX LONG,AUTO
 BtnY LONG,AUTO
 DateZero  PSTRING(2),STATIC
@@ -1348,19 +1350,23 @@ DateRtn ROUTINE
               '|Blank{{00/00/00|Blank <9>B}' & |
             '}|-' 
     NowLong=TODAY() ; IF GenMD THEN NowLong=DATE(12,25,2021).
-    LOOP PX=1 TO 18
+    LOOP PX=1 TO 19
         pPic='@d' & DateZero & PX & DateSlash  & DateBlank
-        IF PX=4 OR PX=18 THEN 
-           FmtStr=FORMAT(TODAY(),PPic)
-           MrkDn=MrkDn &'<13,10>| '& pPic &' | Long Date | '& FORMAT(NowLong,PPic) &' |'
+        IF PX=19 THEN  !12/15/21 show @n with Date Serial Number last
+           pPic='@n_6'  
+           FmtStr='-|Date Serial<9>'&NowLong
+        ELSIF PX=4 OR PX=18 THEN 
+           FmtStr=FORMAT(TODAY(),pPic)
+           MrkDn=MrkDn &'<13,10>| '& pPic &' | Long Date | '& FORMAT(NowLong,pPic) &' |'
         ELSE
-           FmtStr=FORMAT(FmtLong,PPic)
+           FmtStr=FORMAT(FmtLong,pPic)
            DO mmddyyyyRtn
            MrkDn=MrkDn &'<13,10>| '& pPic &' | '& CLIP(FmtStr) &' | '& FORMAT(NowLong,PPic) &' |'
            IF LEN(CLIP(FmtStr))<=5 THEN FmtStr=CLIP(FmtStr) &'<9>'. !mm/yy and yy/mm need extra tab to align
            FmtStr=CLIP(FmtStr) &'<9>'& FORMAT(NowLong,PPic)
         END
         PupTxt=PupTxt & CHOOSE(Px=17,'|-|','|') &  CLIP(FmtStr) &'<9>'& pPic !&' = '& CLIP(FORMAT(FmtLong,PPic))
+        PupPic[PX]=pPic
     END
     PupNo=POPUP(PupTxt,BtnX,BtnY,1)
     IF ~PupNo THEN EXIT.
@@ -1369,7 +1375,7 @@ DateRtn ROUTINE
     OF 3 TO 7 ; DateSlash=CHOOSE(PupNo-2,'','.','`','-','_') ; NewPic='?' ; EXIT
     OF 8 TO 9 ; DateBlank=CHOOSE(PupNo-7,'','b') ; NewPic='?' ; EXIT
     END    
-    NewPic='@d' & DateZero & PupNo-9 & DateSlash & DateBlank
+    NewPic=PupPic[PupNo-9] !12/15/21 was '@d' & DateZero & PupNo-9 & DateSlash & DateBlank
     EXIT
 
 mmddyyyyRtn ROUTINE
@@ -1395,14 +1401,20 @@ TimeRtn ROUTINE
               '|Blank{{00:00:00|Blank <9>B}' & |
             '}|-'
     NowLong=CLOCK()  ; IF GenMD THEN NowLong=4529601.   ! 372301=1:02:03am  4319901=11:59:59 4529601=12:34:56 4692301=1:02:03pm
-    LOOP PX=1 TO 8 
-        pPic='@t' & TimeZero & PX & TimeColon  & TimeBlank
-        FmtStr=FORMAT(FmtLong,PPic)
-        DO hhmmssRtn
-        MrkDn=MrkDn &'<13,10>| '& pPic &' | '& CLIP(FmtStr) &' | '& FORMAT(NowLong,PPic) &' |'
-        IF LEN(CLIP(FmtStr))<=6 THEN FmtStr=CLIP(FmtStr) &'<9>'. !some need extra tab to align
-        FmtStr=CLIP(FmtStr) &'<9>'& FORMAT(NowLong,PPic)        
+    LOOP PX=1 TO 9
+        IF PX=9 THEN    
+           pPic='@n9'  
+           FmtStr='-|Time Serial'
+        ELSE
+           pPic='@t' & TimeZero & PX & TimeColon  & TimeBlank
+           FmtStr=FORMAT(FmtLong,PPic)
+           DO hhmmssRtn
+           MrkDn=MrkDn &'<13,10>| '& pPic &' | '& CLIP(FmtStr) &' | '& FORMAT(NowLong,PPic) &' |'
+           IF LEN(CLIP(FmtStr))<=6 THEN FmtStr=CLIP(FmtStr) &'<9>'. !some need extra tab to align           
+        END
+        FmtStr=CLIP(FmtStr) &'<9>'& FORMAT(NowLong,PPic)
         PupTxt=PupTxt & CHOOSE(Px=7,'|-|','|') & CLIP(FmtStr) &'<9>'& pPic !&' = '& CLIP(FORMAT(FmtLong,PPic))
+        PupPic[PX]=pPic
     END 
     PupNo=POPUP(PupTxt,BtnX,BtnY,1)
     IF ~PupNo THEN EXIT.
@@ -1411,7 +1423,7 @@ TimeRtn ROUTINE
     OF 3 TO 7 ; TimeColon=CHOOSE(PupNo-2,'','.','`','-','_') ; NewPic='?' ; EXIT
     OF 8 TO 9 ; TimeBlank=CHOOSE(PupNo-7,'','b') ; NewPic='?' ; EXIT
     END     
-    NewPic='@t' & TimeZero & PupNo-9 & TimeColon & TimeBlank
+    NewPic=PupPic[PupNo-9] !12/15/21 was '@t' & TimeZero & PupNo-9 & TimeColon & TimeBlank
     EXIT
 hhmmssRtn ROUTINE
     LOOP X=1 TO LEN(CLIP(FmtStr))
