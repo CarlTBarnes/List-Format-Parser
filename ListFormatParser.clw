@@ -22,6 +22,7 @@
 !              FROM Tab 'Align #' button aligns #Values, 'Align "' undoes
 !              FROM Tab 'Split #' button splits 'Item|#Value' into 'Item' &'|#Value' and aligns
 ! 15-Dec-2021  Que2Fmt Picture Popup for Date @d / Time @t added @n to show Serial Number e.g. 12/15/21=80706
+! 28-Dec-2021  Enhance LastOnLine Help
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -1048,7 +1049,7 @@ HelpCls.Init   PROCEDURE()
                                              'in the entry sub-control.')  ! Length = 719
                                              
     SELF.Add1Q('_'  ,'Flag','PROPLIST:Underline'   ,'Line Under Cell'                  ,'An underscore "_" underlines the field.')
-    SELF.Add1Q('/'  ,'Flag','PROPLIST:LastOnLine'  ,'Last Column on Line for Group'    ,'A slash "/" causes the next field to appear on a new line. Only used on a field in a Group [].')
+    SELF.Add1Q('/'  ,'Flag','PROPLIST:LastOnLine'  ,'Last Column on Line for Group of a Multi-Line List ' ,'A slash "/" causes the next field to appear on a new line. Only used on a field in a Group [] to create a Multi-Line List.')
     SELF.Add1Q('|'  ,'Flag','PROPLIST:RightBorder' ,'Line on Right Side of Cell'       ,'A pipe "|" places a vertical line to the right of the field.')
     SELF.Add1Q('M'  ,'Flag','PROPLIST:Resize'      ,'Resizable Cell or Group'          ,'An "M" allows the column or group to be re-sized at runtime. This allows the user to drag the right vertical bar (if present) or right edge of the data area.')
     SELF.Add1Q('F'  ,'Flag','PROPLIST:Fixed'       ,'Fixed Column does not Scroll'     ,'An "F" creates a fixed column that stays on screen when the user horizontally pages through the fields (by the HSCROLL attribute). Fixed fields or groups must be at the start of the list. This is ignored if placed on a field within a group.')
@@ -1057,7 +1058,8 @@ HelpCls.Init   PROCEDURE()
   SELF.Add1Q('Q''''','Tip'  ,'PROPLIST:DefaultTip'  ,'Tool Tip Column Default as ''String'' in FORMAT','A "Q" followed by a ''''string'''' designates the default column tip text. If "P" Column Tip is also specified the default tip shows when the Queue tip field is blank. Default tips can my the Format() unruly long so are best assigned at runtime.')
     SELF.Add1Q('#'  ,'Data' ,'PROPLIST:FieldNo'     ,'Field Number from Queue as #number#','A #number# enclosed in pound signs indicates the QUEUE field to display. Following fields in the format string without an explicit #number# are taken in order from the fields following the #number# field. For example, #2# on the first field in the format string indicates starting with the second field in the QUEUE, skipping the first. If the number of fields specified in the format string are >= the number of fields in the QUEUE, the format "wraps around" to the start of the QUEUE.')
 
-    SELF.Add1Q('[]' ,'Group','PROPLIST:Group + '    ,'Group Columns '                     ,'"[]" indicate multiple columns grouped. A group may specify header text after the ending "]" using the syntax: ~header text~ Justification LRCD (Indent).' & |
+    SELF.Add1Q('[]' ,'Group','PROPLIST:Group + '    ,'Group Columns '                     ,'"[]" indicate multiple columns grouped. A group may specify header text that spans the columns after the ending "]" using the syntax: ~header text~ Justification LRCD (Indent).' & |
+        '<13,10><13,10>Groups can create a Multi-Line List by using the LastOnLine "/" modifier.' & |
         '<13,10><13,10>{{PROPLIST:GroupNo,Column} returns the group number of a column.' & |
         '<13,10><13,10>{{PROPLIST:GroupNo + PROPLIST:Group,Column} returns the number of columns in the group or zero if not a group.<13,10>')
     SELF.Add1Q('[]()' ,'Group','PROPLIST:Width of [Group]' ,'Group Width', |
