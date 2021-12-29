@@ -263,7 +263,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         ICON(ICON:Copy),TIP('Copy FORMAT + Explain to Clipboard'),LEFT
                 BUTTON('Preview<13,10>Format()'),AT(344,23,62,22),USE(?PreviewListBtn),SKIP, |
                         ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
-                BUTTON,AT(419,23,22,22),USE(?ModHelpBtn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')
+                BUTTON,AT(419,23,22,22),USE(?ModHelpBtn),SKIP,ICON(ICON:Help),TIP('LIST and Modifier Help')
                 BUTTON('&ReRun'),AT(461,23,35,22),USE(?RunAgainFmtBtn),SKIP,TIP('Run Another Instance')
                 TEXT,AT(139,52),FULL,USE(Fmt:InLines),SKIP,HVSCROLL,FONT('Consolas',9)
                 PROMPT('Fields'),AT(8,27),USE(?PROMPT1)
@@ -277,13 +277,14 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 BUTTON,AT(12,35,18,18),USE(?CopyExplainBtn),SKIP,ICON(ICON:Copy),TIP('Copy Format Ex' & |
                         'plain to Clipboard')
                 BUTTON,AT(12,60,18,18),USE(?PreviewList2Btn),SKIP,ICON(ICON:Zoom),TIP('Preview LIST')
-                BUTTON,AT(12,85,18,18),USE(?ModHelp2Btn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')
+                BUTTON,AT(12,85,18,18),USE(?ModHelp2Btn),SKIP,ICON(ICON:Help),TIP('LIST and Modifier Help')
                 TEXT,AT(39,26),FULL,USE(Fmt:Explain),HVSCROLL,FONT('Consolas',9)
             END
             TAB(' FR&OM '),USE(?TabFROM),TIP('LIST FROM()')
                 PROMPT(' LIST with FROM(''String 1|String 2|#2'') is parsed into continuation Lines ' & |
-                        'for viewing and editing. '),AT(6,22,,10),USE(?FromFYI),FONT('Consolas',9, |
+                        'for view and edit. '),AT(6,22,,10),USE(?FromFYI),FONT('Consolas',9, |
                         COLOR:Black),COLOR(COLOR:White)
+                BUTTON('FROM Help'),AT(449,20,52,14),USE(?CwHelpForFROM),SKIP,TIP('View Clarion Help on FROM')                        
                 PROMPT('FROM( )'),AT(7,41),USE(?From:Format:Prompt)
                 TEXT,AT(40,40,460,58),USE(From:From),VSCROLL,FONT('Consolas',10)
                 BUTTON,AT(12,61,18,18),USE(?FromFromCopyBtn),SKIP,ICON(ICON:Copy),TIP('Copy FORM() t' & |
@@ -306,7 +307,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         's wrap')
                 BUTTON('Preview<13,10>Format()'),AT(344,23,62,22),USE(?PreviewList3Btn),SKIP, |
                         ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
-                BUTTON,AT(419,23,22,22),USE(?ModHelp3Btn),SKIP,ICON(ICON:Help),TIP('Modifier Letter Help')
+                BUTTON,AT(419,23,22,22),USE(?ModHelp3Btn),SKIP,ICON(ICON:Help),TIP('LIST and Modifier Help')
                 TEXT,AT(8,52),FULL,USE(ListParsed),HVSCROLL,FONT('Consolas',9)
             END
             TAB(' History '),USE(?TabHistory),TIP('History of processed code to reload previous')
@@ -315,7 +316,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         '55@/20L(2)|_FM~    FORMAT    (Double-Click on a Line to Reload)~@s255@]|F')
             END
             TAB(' LIST &Help '),USE(?TabHelp),TIP('List Format and Modifiers Help')
-                TEXT,AT(10,22,489,20),USE(HelpSyntax),SKIP,FONT('Consolas',9),READONLY                        
+                TEXT,AT(10,22,440,20),USE(HelpSyntax),SKIP,FONT('Consolas',9),READONLY                        
+                BUTTON('CW Help'),AT(458,22,42,20),USE(?CwHelpForList),SKIP,TIP('View Clarion Help on LIST')
                 TEXT,AT(10,48,489,64),USE(HelpWidth),SKIP,FONT('Consolas',9),READONLY
                 LIST,AT(10,118,310),FULL,USE(?List:ModifierQ),VSCROLL,FROM(ModifierQ),FORMAT('22L(3)' & |
                         '|M~Mod~C(0)@s4@Z(1)71L(3)|M~PROPLIST:~L(2)@s100@Z(2)29L(3)|M~Type~C(0)@s5@1' & |
@@ -449,6 +451,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 TEXT,AT(372,132,308,63),USE(GenQue_FIELDS),SKIP,VSCROLL,FONT('Consolas',9)
                 BUTTON,AT(12,132,18,18),USE(?GenQueueCopyFormatBtn),SKIP,ICON(ICON:Copy),TIP('Copy F' & |
                         'ORMAT() to Clipboard')
+                BUTTON,AT(12,155,18,18),USE(?ModHelp4Btn),SKIP,ICON(ICON:Help),TIP('LIST and Modifier Help')                        
                 BUTTON,AT(12,178,18,18),USE(?GenQueueCopyField2Btn),SKIP,ICON(ICON:Copy),TIP('Copy F' & |
                         'ORMAT()<13,10>and #FIELDS() to Clipboard')
                 BUTTON,AT(420,110,18,18),USE(?GenQueueCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
@@ -521,7 +524,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 STRING('FIELDS'),AT(380,160),USE(?FieldsLit),FONT(,12)
                 TEXT,AT(381,178,308,119),USE(GenSim_FIELDS),SKIP,VSCROLL,FONT('Consolas',9)
                 BUTTON,AT(12,178,18,18),USE(?GenSimpleCopyFormatBtn),SKIP,ICON(ICON:Copy), |
-                        TIP('Copy Format to Clipboard')
+                        TIP('Copy Format to Clipboard') 
+                BUTTON,AT(12,226,18,18),USE(?ModHelp5Btn),SKIP,ICON(ICON:Help),TIP('LIST and Modifier Help')
                 BUTTON,AT(12,279,18,18),USE(?GenSimpleCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy Format and #Fields() to Clipboard')
                 PROMPT('"Simple Format" was <0DH,0AH>my first idea ...but...<0DH,0AH>"Queue 2 Format' & |

@@ -23,6 +23,7 @@
 !              FROM Tab 'Split #' button splits 'Item|#Value' into 'Item' &'|#Value' and aligns
 ! 15-Dec-2021  Que2Fmt Picture Popup for Date @d / Time @t added @n to show Serial Number e.g. 12/15/21=80706
 ! 28-Dec-2021  Enhance LastOnLine Help
+! 29-Dec-2021  Help buttons open CW Help for List with CwHelpListPopup(). Tabs "From, Help, Que2Fmt, SimpleFmt" add Help button.
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -58,7 +59,7 @@ WndPrvCls   CBWndPreviewClass       !At least download the LibSrc files and put 
 ListFormatParser    PROCEDURE() 
 MsgLineBreak        PROCEDURE(STRING Txt),STRING
 GetExample          PROCEDURE(BYTE ExpNo, <*STRING GenQueFmtExample>),STRING
-ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos) 
+ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos, STRING HelpBtnFEQ) 
 ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
 InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt, *LONG OutLeftPos, *LONG OutRightPos, <*STRING OutBetweenStr>),LONG,PROC !Returns -1 Not Found or Length Between may =0
 No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Clipped
@@ -75,17 +76,20 @@ InterlockedExchange        PROCEDURE(*LONG Target, LONG SetToValue),LONG,PROC,PA
         END    
   END
 !Region Global data
-ModifierHelp STRING(' Pipe = Right Border   M=Resizable ' &|
+ModifierHelp_ThreadOpen LONG,STATIC
+ModifierHelp STRING(' <166> = Right Border <13,10> M = Resizable ' &|
+     '<13,10> F = Fixed (cannot scroll) ' &|
      '<13,10> _ = Underline ' &|
      '<13,10> / = LastOnLine ' &|
      '<13,10> ? = Locator ' &|
      '<13,10> # = FieldNo ' &|
      '<13,10>' &|
      '<13,10> * = Colors in Q ' &|
-     '<13,10> B(c)=BarFrame Color ' &|
-     '<13,10> E(fbsb)=Color Defaults ' &|
+     '<13,10> B(c) = BarFrame Color ' &|
+     '<13,10> E(fbsb) = Color Defaults ' &|
+     '<13,10> Y = Cell Style No. in Q ' &|
+     '<13,10> Z(#) = Column Style' &|
      '<13,10>  ' &|
-     '<13,10> F = Fixed (cannot scroll) ' &|
      '<13,10> I = Icon ' &|
      '<13,10> J = Icon Transparent ' &|
      '<13,10> M = Resizable     |=RightBorder ' &|
@@ -93,8 +97,6 @@ ModifierHelp STRING(' Pipe = Right Border   M=Resizable ' &|
      '<13,10> Q = Tip "Default" Column ' &|
      '<13,10> S(w)=ScrollBar ' &|
      '<13,10> T(s)=Tree (Surpress: B=Boxes I=Indent L=Lines R=Root 1=Offset) ' &|
-     '<13,10> Y = Cell Style No. in Q ' &|
-     '<13,10> Z(#) = Column Style' &|
      '<13,10>' &|
      '<13,10> Queue Order: *Color - Icon index - Tree level - Y style code - P tip' )
 !endRegion
@@ -163,7 +165,13 @@ Tabs1Line       BOOL
         OF ?CopyLineFmtPlusExplainBtn ; SETCLIPBOARD(CLIP(Fmt:InLines) &'<13,10>' & Fmt:Explain ) 
         OF   ?ModHelp2Btn
         OROF ?ModHelp3Btn
-        OROF ?ModHelpBtn     ; START(ModifierHelpPopup,,0{PROP:XPos}+0{PROP:Width},0{PROP:YPos}+20)
+        OROF ?ModHelp4Btn
+        OROF ?ModHelp5Btn
+        OROF ?ModHelpBtn     ;  IF ~ModifierHelp_ThreadOpen THEN !New IDE Help Popup conflicts with Start Window
+                                    RESUME(START(ModifierHelpPopup,,0{PROP:XPos}+0{PROP:Width},0{PROP:YPos}+20,ACCEPTED()))
+                                ELSE
+                                    WndPrvCls.CwHelpListPopup(?)
+                                END
 
         OF ?CopyListLineFmtBtn    ; SETCLIPBOARD(ListParsed)
         OF ?CopyListFlatBtn       ; SETCLIPBOARD(ListFlat)
@@ -180,7 +188,9 @@ Tabs1Line       BOOL
                GET(HistoryQ, CHOICE(?LIST:HistoryQ))
                ListControl = HisQ:ListControl
                POST(EVENT:Accepted,?ProcessBtn) 
-            END 
+            END
+        OF ?CwHelpForFROM ; WndPrvCls.CwHelpOpenTopic('~From__set_listbox_data_source_.htm')
+        OF ?CwHelpForList ; WndPrvCls.CwHelpListPopup(?)
         OF ?RunAgainBtn OROF ?RunAgainGFQBtn OROF ?RunAgainFmtBtn OROF ?RunAgainFromBtn ; RUN(COMMAND('0'))
         OF ?DebugTabs   ; DO TabHideSyncRtn 
         OF ?PreviewListBtn OROF ?PreviewList2Btn OROF ?PreviewList3Btn
@@ -981,10 +991,9 @@ HelpCls.Init   PROCEDURE()
     CODE !( _Char,  _Name,  _Prop,  _Desc) 
     ?ModHelpBtn{PROP:Tip}=ModifierHelp
     ?ModHelp2Btn{PROP:Tip}=ModifierHelp
-!    SELF.Add1Q('L'  ,'Align','PROPLIST:Left :HeaderLeft'        ,'Justification Left of Data or Heading'     ,'Left alignment of column data, or heading text. This may be offset by an (Indent).')
-!    SELF.Add1Q('R'  ,'Align','PROPLIST:Right :HeaderRight'      ,'Justification Right of Data or Heading'    ,'Right alignment of column data, or heading text. This may be offset by an (Indent).')
-!    SELF.Add1Q('C'  ,'Align','PROPLIST:Center  :HeaderCenter'   ,'Justification Center of Data or Heading'   ,'Center alignment of column data, or heading text. This may be offset by an (Indent).')
-!    SELF.Add1Q('D'  ,'Align','PROPLIST:Decimal :HeaderDecimal'  ,'Justification Decimal of Data or Heading'  ,'Decimal alignment of column data, or heading text. The offset to the decimal point is specified with an (Indent).')
+    ?ModHelp3Btn{PROP:Tip}=ModifierHelp
+    ?ModHelp4Btn{PROP:Tip}=ModifierHelp
+    ?ModHelp5Btn{PROP:Tip}=ModifierHelp
 
     SELF.Add1Q('L'  ,'Align','PROPLIST:Left   ','Justification Left of Data'      ,'Left alignment of column Data. This may be offset by an (Indent).')
     SELF.Add1Q('R'  ,'Align','PROPLIST:Right  ','Justification Right of Data'    ,'Right alignment of column Data. This may be offset by an (Indent).')
@@ -1163,7 +1172,7 @@ HelpCls.Init2   PROCEDURE()
      '<13,10>If BarFrame color matches the Selection Bar color, ' &|
      '<13,10>the focus rectangle is not drawn if List has focus.'  ! Length = 718
 
-    HelpSyntax=' Column: Width Justification LRCD (Indent) Modifiers ~CellHead~ Justify(IndentHead) @picture@ ' &|
+    HelpSyntax=' Column: Width Justification LRCD (Indent) Modifiers ~CellHead~ LRCD(IndentHead) @picture@ ' &|
         '<13,10> Group:  [Columns] (GroupWidth) Modifiers ~GroupHead~Justification(IndentHead)'
     HelpWidth = ' Width      PROPLIST:Width    Width of the Column or Group in DLUs' &|
      '<13,10> Justify L  PROPLIST:Left     Left align    (Indent) PROPLIST:LeftOffset' &|
@@ -2178,31 +2187,38 @@ ModTest WINDOW('Modifiers and Picutres'),AT(,,586,90),GRAY,FONT('Segoe UI',9),RE
     END  
     !end of OMIT('**END**')
 !====================================================
-ModifierHelpPopup PROCEDURE(STRING XPos, STRING YPos) 
-ModWin WINDOW('Modifiers'),AT(,,180,210),GRAY,RESIZE,SYSTEM,FONT('Segoe UI',8),ICON('LFmtIcon.ico')
-        TEXT,AT(0,0),USE(ModifierHelp),FLAT,HVSCROLL,READONLY,FULL,FONT('Consolas',9)
-    END
+ModifierHelpPopup PROCEDURE(STRING XPos, STRING YPos, STRING HelpBtnFEQ)
+DoNotOpenThis BYTE,STATIC
 P LONG,DIM(4),STATIC
-ThreadOpen LONG,STATIC
-    CODE  
-    !03/31/21 ThreadSafe  .... IF ThreadOpen ==========0             !ICE() will set ThreadOpen=THREAD() IF it was =0
-    IF InterlockedCompareExchange(ThreadOpen,THREAD(), 0) <> 0 THEN  !Returns initial value of ThreadOpen so IF <>0 is already running
-       POST(EVENT:User+1,,ThreadOpen)                                !Possible Race Condition that TheadOPen was set to Zero by a closing window in this time slice
+ModWin WINDOW('Modifiers'),AT(,,180,228),GRAY,SYSTEM,ICON('LFmtIcon.ico'),FONT('Segoe UI',8,COLOR:Black), |
+            COLOR(0E1FFFFH),RESIZE
+        CHECK('Don''t Open'),AT(121,1),USE(DoNotOpenThis),SKIP,TRN,TIP('Do not open Modifiers window' & |
+                ' when Help is shown')
+        TEXT,AT(0,15,,213),FULL,USE(ModifierHelp),FLAT,HVSCROLL,FONT('Consolas',9),READONLY
+    END
+    CODE
+    !03/31/21 ThreadSafe  .... IF ThreadOpen ==========0   !ICE() will set ThreadOpen=THREAD() IF it was =0
+    IF InterlockedCompareExchange(ModifierHelp_ThreadOpen,THREAD(), 0) <> 0 THEN  !Returns initial value of ThreadOpen so IF <>0 is already running
+!12/29/21 not with new CwHelp  POST(EVENT:User+1,,ThreadOpen)                     !Possible Race Condition that TheadOPen was set to Zero by a closing window in this time slice
        RETURN
     END
     !03/31/21 This "ThreadOpen=THREAD()" is done in InterlockedCompareExchange() only when ThreadOpen=0
-    OPEN(ModWin) 
+    OPEN(ModWin)
     IF P[3] THEN SETPOSITION(0,P[1],P[2],P[3],P[4]) ELSE SETPOSITION(0,Xpos,YPos).
-    ?ModifierHelp{PROP:Color}    =80000018h !COLOR:InfoBackground
-    ?ModifierHelp{PROP:FontColor}=80000017h !COLOR:InfoText
-    ACCEPT 
+!    ?ModifierHelp{PROP:Color}    =80000018h !COLOR:InfoBackground  12/29/21 colors now on Window
+!    ?ModifierHelp{PROP:FontColor}=80000017h !COLOR:InfoText
+    ACCEPT
         CASE EVENT()
+        OF EVENT:OpenWindow  ; POST(EVENT:Accepted,HelpBtnFEQ,1)
         OF EVENT:User+1
            0{PROP:Iconize}=0 ; 0{PROP:Active}=1
         END
+        CASE ACCEPTED()
+        OF ?DoNotOpenThis ; BREAK
+        END
     END
     GETPOSITION(0,P[1],P[2],P[3],P[4])
-    InterlockedExchange(ThreadOpen,0)   !03/31/21 does ThreadOpen=0 Thread Safe
+    IF ~DoNotOpenThis THEN InterlockedExchange(ModifierHelp_ThreadOpen,0).   !03/31/21 does ThreadOpen=0 Thread Safe
     RETURN
 !====================================================
 ChrCount PROCEDURE(STRING Text2Scan, STRING ChrList)!LONG 
