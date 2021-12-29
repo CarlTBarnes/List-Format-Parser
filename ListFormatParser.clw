@@ -268,11 +268,12 @@ Tabs1Line       BOOL
             OF EVENT:NewSelection
                DISPLAY(?ModQ:Desc) 
                IF KEYCODE()=MouseRight THEN
-                  CASE POPUP('Copy PROP and Description|Copy PROPLIST|Copy Long Description|-|Copy All')
+                  CASE POPUP('Copy PROP and Description|Copy PROPLIST|Copy Long Description|-|Copy All|-|Open CW Help')
                   OF 1 ; SETCLIPBOARD(CLIP(ModQ:Char) &'  '& CLIP(ModQ:PropFULL) &'  '&CLIP(ModQ:Name))
                   OF 2 ; SETCLIPBOARD(ModQ:PropFULL)
                   OF 3 ; SETCLIPBOARD(ModQ:Desc)
-                  OF 4 ;  ; Message('TODO Copy ALL')
+                  OF 4 ; WndPrvCls.QueueReflection(ModifierQ,'ModifierQ',1)
+                  OF 5 ; WndPrvCls.CwHelpOpenTopic('~proplist_properties_index.htm',0) !('PROPLIST',0) or (ModQ:Prop)
                   END
                ELSE 
                   
