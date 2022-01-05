@@ -25,6 +25,7 @@
 ! 28-Dec-2021  Enhance LastOnLine Help
 ! 29-Dec-2021  Help buttons open CW Help for List with CwHelpListPopup(). Tabs "From, Help, Que2Fmt, SimpleFmt" add Help button.
 ! 05-Jan-2022  Que2Fmt new "+Window+List" button generates WINDOW and LIST with FORMAT see GenFmt.CopyWindowAndListBtn()
+! 05-Jan-2022  Que2Fmt new "Q Fields =" button generates Que:Field= for all fields see GenFmt.CopyFieldsEqualBtn()
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -225,8 +226,9 @@ Tabs1Line       BOOL
 
         OF ?GenQueueCopyFormatBtn  ; GenFmt.CopyFormatBtn(?GenQue_Format,0)    
         OF ?GenQueueCopyFieldsBtn  ; GenFmt.CopyFormatBtn(0,?GenQue_FIELDS)
-        OF ?GenQueueCopyField2Btn  ; GenFmt.CopyFormatBtn(?GenQue_Format,?GenQue_FIELDS)
-        OF ?GenQueueCopyWindowBtn  ; GenFmt.CopyWindowAndListBtn(?GenQue_Format,?GenQue_FIELDS)
+        OF ?GenQueueCopyField2Btn  ; GenFmt.CopyFormatBtn(?GenQue_Format,?GenQue_FIELDS)       
+        OF ?GenQueueCopyWindowBtn  ; GenFmt.CopyWindowAndListBtn(?GenQue_Format,?GenQue_FIELDS)        
+        OF ?GenQueueFieldsEqualBtn ; GenFmt.CopyFieldsEqualBtn() 
         OF ?GenQueueDefaultSaveBtn ; GenFmt.ConfigGetPut(2,'GenQueue',GenFmt_Queue)
         OF ?GenQueueDefaultLoadBtn ; GenFmt.QueueLoadConfig() ; DISPLAY
         OF ?GenQueueClearBtn       ; GenFmt_Queue=GenFmt_Queue_Defaults ; DISPLAY
@@ -1351,6 +1353,34 @@ _ListUSE_  PSTRING(96)
     '<13,10>  END !ACCEPT' &|
     '<13,10>  CLOSE(ListWindow)' &|
     '<13,10>'
+    SETCLIPBOARD(CodeCB)
+    RETURN
+!----------------------------------
+GenFmt.CopyFieldsEqualBtn PROCEDURE() !01/05/22 Generate Queue.Field= for all fields
+CodeCB ANY
+QX USHORT,AUTO
+LenFld USHORT,AUTO
+AField PSTRING(256)
+MaxLen USHORT
+    CODE
+    LOOP QX=1 TO RECORDS(GQFieldsQ)
+        GET(GQFieldsQ,QX)
+        LenFld=LEN(CLIP(GQFldQ:Pre_Label))
+        IF LenFld > MaxLen THEN MaxLen = LenFld.
+    END
+    
+    CodeCB =    'CLEAR(' & GenQue_Name &')'
+    LOOP QX=1 TO RECORDS(GQFieldsQ)
+        GET(GQFieldsQ,QX)
+        LenFld=LEN(CLIP(GQFldQ:Pre_Label))  
+        IF ~LenFld THEN CYCLE.
+        AField = GQFldQ:Pre_Label[1 : LenFld] & ALL(' ',MaxLen -LenFld) & ' = ' 
+        IF GQFldQ:OmitHow OR UPPER(GQFldQ:Type)='GROUP' THEN 
+           AField = AField & '    ! ' & GQFldQ:OmitHow &'  '& GQFldQ:Type
+        END 
+        CodeCB = CodeCB & CLIP('<13,10>' & AField )
+    END        
+    CodeCB = CodeCB & '<13,10>!ADD('& GenQue_Name & ') <13,10>'
     SETCLIPBOARD(CodeCB)
     RETURN    
 !----------------------------------

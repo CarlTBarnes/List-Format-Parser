@@ -147,6 +147,7 @@ SimpleLoadConfig PROCEDURE()
 ConfigGetPut     PROCEDURE(BYTE Get1_Put2, STRING CfgSection, *GROUP ConfigGrp)
 CopyFormatBtn    PROCEDURE(LONG FeqFormatText, LONG FeqFieldsText, BOOL ReturnCode=0),STRING,PROC
 CopyWindowAndListBtn  PROCEDURE(LONG FeqFmt, LONG FeqFields)   !01/05/22 Generate WINDOW + LIST + Format
+CopyFieldsEqualBtn    PROCEDURE()                              !01/05/22 Generate Queue.Field= for all fields
 PictureAccepted  PROCEDURE(LONG FEQ, STRING DorT)
 PicturePopup     PROCEDURE(LONG FEQ, STRING DorT)
 
@@ -459,6 +460,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 BUTTON,AT(412,110,18,18),USE(?GenQueueCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy #FIELDS() to Clipboard')
                 BUTTON('+Window+List'),AT(438,110,,18),USE(?GenQueueCopyWindowBtn),SKIP,TIP('Generate WINDOW Code with LIST and FORMAT') 
+                BUTTON('Q Fields ='),AT(510,110,,18),USE(?GenQueueFieldsEqualBtn),SKIP,TIP('Generate code with Queue Field= for all fields') 
                 PROMPT('What''s This:<13,10>Creating a new List Format for a Queue can be tedious ad' & |
                         'ding each column. This generates a FORMAT for your QUEUE definition you pas' & |
                         'te into the Text control on the lower left.'),AT(420,20,110,86),USE(?GenQueueWhatsThis) |
