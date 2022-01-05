@@ -145,7 +145,8 @@ SimplePreviewBtn PROCEDURE()
 SimpleParseBtn   PROCEDURE()
 SimpleLoadConfig PROCEDURE()
 ConfigGetPut     PROCEDURE(BYTE Get1_Put2, STRING CfgSection, *GROUP ConfigGrp)
-CopyFormatBtn    PROCEDURE(LONG FeqFormatText, LONG FeqFieldsText)
+CopyFormatBtn    PROCEDURE(LONG FeqFormatText, LONG FeqFieldsText, BOOL ReturnCode=0),STRING,PROC
+CopyWindowAndListBtn  PROCEDURE(LONG FeqFmt, LONG FeqFields)   !01/05/22 Generate WINDOW + LIST + Format
 PictureAccepted  PROCEDURE(LONG FEQ, STRING DorT)
 PicturePopup     PROCEDURE(LONG FEQ, STRING DorT)
 
@@ -196,6 +197,7 @@ SelectTabAtOpen     BYTE                    !GenQue:SelectTabAtOpen
 GenFmt_Queue_Defaults  LIKE(GenFmt_Queue)
 GenQue_Format   STRING(2000)
 GenQue_FIELDS   STRING(2000)
+GenQue_Width    LONG          !01/05/22 sum of Column Widths to size LIST AT() for CopyWindowAndListBtn
 
 GenQue_TextQ    STRING(5000)    !Queue Text control
 GenQue_IsFILE   BOOL            !Was QUEUE a FILE?
@@ -454,8 +456,9 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 BUTTON,AT(12,155,18,18),USE(?ModHelp4Btn),SKIP,ICON(ICON:Help),TIP('LIST and Modifier Help')                        
                 BUTTON,AT(12,178,18,18),USE(?GenQueueCopyField2Btn),SKIP,ICON(ICON:Copy),TIP('Copy F' & |
                         'ORMAT()<13,10>and #FIELDS() to Clipboard')
-                BUTTON,AT(420,110,18,18),USE(?GenQueueCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
+                BUTTON,AT(412,110,18,18),USE(?GenQueueCopyFieldsBtn),SKIP,ICON(ICON:Copy), |
                         TIP('Copy #FIELDS() to Clipboard')
+                BUTTON('+Window+List'),AT(438,110,,18),USE(?GenQueueCopyWindowBtn),SKIP,TIP('Generate WINDOW Code with LIST and FORMAT') 
                 PROMPT('What''s This:<13,10>Creating a new List Format for a Queue can be tedious ad' & |
                         'ding each column. This generates a FORMAT for your QUEUE definition you pas' & |
                         'te into the Text control on the lower left.'),AT(420,20,110,86),USE(?GenQueueWhatsThis) |

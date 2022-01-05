@@ -24,6 +24,7 @@
 ! 15-Dec-2021  Que2Fmt Picture Popup for Date @d / Time @t added @n to show Serial Number e.g. 12/15/21=80706
 ! 28-Dec-2021  Enhance LastOnLine Help
 ! 29-Dec-2021  Help buttons open CW Help for List with CwHelpListPopup(). Tabs "From, Help, Que2Fmt, SimpleFmt" add Help button.
+! 05-Jan-2022  Que2Fmt new "+Window+List" button generates WINDOW and LIST with FORMAT see GenFmt.CopyWindowAndListBtn()
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -225,6 +226,7 @@ Tabs1Line       BOOL
         OF ?GenQueueCopyFormatBtn  ; GenFmt.CopyFormatBtn(?GenQue_Format,0)    
         OF ?GenQueueCopyFieldsBtn  ; GenFmt.CopyFormatBtn(0,?GenQue_FIELDS)
         OF ?GenQueueCopyField2Btn  ; GenFmt.CopyFormatBtn(?GenQue_Format,?GenQue_FIELDS)
+        OF ?GenQueueCopyWindowBtn  ; GenFmt.CopyWindowAndListBtn(?GenQue_Format,?GenQue_FIELDS)
         OF ?GenQueueDefaultSaveBtn ; GenFmt.ConfigGetPut(2,'GenQueue',GenFmt_Queue)
         OF ?GenQueueDefaultLoadBtn ; GenFmt.QueueLoadConfig() ; DISPLAY
         OF ?GenQueueClearBtn       ; GenFmt_Queue=GenFmt_Queue_Defaults ; DISPLAY
@@ -1265,7 +1267,7 @@ ConfigIni STRING('.\ListFmtConfig.INI')
     END
     RETURN
 !----------------------------------
-GenFmt.CopyFormatBtn    PROCEDURE(LONG FeqFmt, LONG FeqFields)
+GenFmt.CopyFormatBtn    PROCEDURE(LONG FeqFmt, LONG FeqFields, BOOL ReturnCode=0)!,STRING,PROC
 FmtCB ANY
 CL CSTRING(1025),AUTO 
 LX USHORT,AUTO 
@@ -1280,9 +1282,12 @@ LX USHORT,AUTO
 !       FmtCB=CHOOSE(~FmtCB,'',FmtCB&', |<13,10>') &' #FIELDS('
 !       DO GetFieldsRtn
 !       FmtCB = FmtCB & ')'
-    END    
+    END
+    IF ReturnCode THEN 
+       RETURN FmtCB
+    END 
     SETCLIPBOARD(FmtCB &'<13,10>')
-    RETURN
+    RETURN ''
 GetFormatRtn ROUTINE
     LOOP LX=1 TO FeqFmt{PROP:LineCount}
          CL=CLIP(FeqFmt{PROP:Line,LX}) ; IF ~CL AND LX>1 THEN CYCLE.
@@ -1296,7 +1301,58 @@ GetFieldsRtn ROUTINE  !TODO Split into lines? use above code
 !         IF LX>1 THEN FmtCB=FmtCB &' &|<13,10> {9}'.
 !         FmtCB=FmtCB &CLIP( CL )
 !    END
-    EXIT
+    EXIT   
+!----------------------------------
+GenFmt.CopyWindowAndListBtn  PROCEDURE(LONG FeqFmt, LONG FeqFields)  !01/05/22 Generate WINDOW + LIST + Format
+CodeCB ANY
+FormatCode ANY
+FieldsCode ANY
+ListWidth  LONG
+_ListUSE_  PSTRING(96)
+    CODE
+    FormatCode=GenFmt.CopyFormatBtn(FeqFmt,0         , True)
+    FieldsCode=GenFmt.CopyFormatBtn(0     , FeqFields, True)
+    ListWidth = GenQue_Width + 10       !10=VScroll Width
+    _ListUSE_ = '?LIST:'& GenQue_Name   !dup in USE(?List below
+
+    CodeCB =    '!ViewQueue_' & GenQue_Name &' PROCEDURE()' & |
+         '<13,10>!ViewQueue_' & GenQue_Name &' ROUTINE <13,10>!   DATA <13,10>' & |
+    '<13,10>ListWindow WINDOW(''LIST Queue '& GenQue_Name & '''),' & |
+                  'AT(,,' & 4+ListWidth & ',154),GRAY,SYSTEM,FONT(''Segoe UI'',10),RESIZE  ! MDI CENTER ICON(ICON:Clarion) ' &|
+    '<13,10>' &|
+    '<13,10>! LIST,AT(2,2 ), FULL, hVSCROLL,VCR, | ! ' &|
+    '<13,10>  LIST,AT(2,2,' & ListWidth & ',150),hVSCROLL,VCR, | ' &|
+    '<13,10>       USE('&       _ListUSE_   &' ), | ' &|
+    '<13,10>        FROM(    '& GenQue_Name &' ), | ' &|
+    '<13,10>' & FormatCode & ' ! ,| ' &|
+    '<13,10>! '& FieldsCode & ' <13,10>' &|     !Expect to use this for hand code so comment ! #fields
+    '<13,10>    END' &|
+    '<13,10>    ' &|
+    '<13,10>    CODE' &|
+    '<13,10>  OPEN(ListWindow)' &|
+    '<13,10>  ACCEPT ' &|
+    '<13,10>    CASE EVENT()' &|
+    '<13,10>    END' &|
+    '<13,10>    CASE ACCEPTED()' &|
+    '<13,10>    OF ' & _ListUSE_ &|
+    '<13,10>       GET(' & GenQue_Name &',CHOICE(' & _ListUSE_ &'))' & |
+    '<13,10>    END' &|
+    '<13,10>    CASE FIELD()' &|
+    '<13,10>    OF ' & _ListUSE_ &|
+    '<13,10>       GET(' & GenQue_Name &',CHOICE(' & _ListUSE_ &'))' & |
+    '<13,10>       CASE EVENT()' &|
+    '<13,10>       OF EVENT:NewSelection' & |
+    '<13,10>          ! CASE KEYCODE()' & |     !??? Event:Accepted gets these the same, is simpler code, so use that ???
+    '<13,10>          ! OF MouseLeft2' & |
+    '<13,10>          ! OF MouseRight' & |
+    '<13,10>          ! END' & |
+    '<13,10>       END' &|
+    '<13,10>    END' &|
+    '<13,10>  END !ACCEPT' &|
+    '<13,10>  CLOSE(ListWindow)' &|
+    '<13,10>'
+    SETCLIPBOARD(CodeCB)
+    RETURN    
 !----------------------------------
 GenFmt.PictureAccepted PROCEDURE(LONG FEQ, STRING DorT)
 Pic STRING(40),AUTO
@@ -1732,7 +1788,7 @@ ColWidth   USHORT
 LastFieldNo SHORT !GQFldQ:FieldNo
 ThisFieldNo SHORT !GQFldQ:FieldNo
     CODE
-    GenQue_Format='' ; GenQue_FIELDS='#FIELDS('
+    GenQue_Format='' ; GenQue_FIELDS='#FIELDS(' ; GenQue_Width=0
     IF GenQue:WidthMin < 4   THEN GenQue:WidthMin=20.
     IF GenQue:WidthMax > 500 THEN GenQue:WidthMax=500.
     IF ~InRange(GenQue:Digits_BYTE ,1,3 ) THEN GenQue:Digits_BYTE =3. 
@@ -1758,6 +1814,7 @@ ThisFieldNo SHORT !GQFldQ:FieldNo
         IF ColWidth < GenQue:WidthMin THEN ColWidth=GenQue:WidthMin.
         IF ColWidth > GenQue:WidthMax THEN ColWidth=GenQue:WidthMax.
         IF GQFldQ:OmitHow=eOmit_Hide THEN ColWidth=0.
+        IF ColWidth THEN GenQue_Width += (ColWidth + 4).     !12/30/21 Need Width of all columns, fudge of +4 for column sep
 
         IF ~DataJustify THEN DataJustify='L'.
         DataIndent='('&GenQue:Indent&')'    !Center Indent Zero
