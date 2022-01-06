@@ -1352,6 +1352,11 @@ _ListUSE_  PSTRING(96)
     '<13,10>    END' &|
     '<13,10>  END !ACCEPT' &|
     '<13,10>  CLOSE(ListWindow)' &|
+    '<13,10>' & |
+    '<13,10>!LOOP QNdx=1 TO RECORDS('& GenQue_Name &')  ! TO 1 BY -1' & |   !Gen Common Looping Code
+    '<13,10>!   GET('& GenQue_Name &',QNdx)' & |
+    '<13,10>!   !PUT DELETE ('& GenQue_Name &')' & |
+    '<13,10>!END' & |
     '<13,10>'
     SETCLIPBOARD(CodeCB)
     RETURN
@@ -1380,7 +1385,15 @@ MaxLen USHORT
         END 
         CodeCB = CodeCB & CLIP('<13,10>' & AField )
     END        
-    CodeCB = CodeCB & '<13,10>!ADD('& GenQue_Name & ') <13,10>'
+    CodeCB = CodeCB & |
+    '<13,10>!ADD('& GenQue_Name & ') ' &|
+    '<13,10>' & |
+    '<13,10>!LOOP QNdx=1 TO RECORDS('& GenQue_Name &')  ! TO 1 BY -1' & |   !Gen Common Looping Code
+    '<13,10>!   GET('& GenQue_Name &',QNdx)' & |
+    '<13,10>!   !PUT DELETE ('& GenQue_Name &')' & |
+    '<13,10>!END' & |
+    '<13,10>'
+    
     SETCLIPBOARD(CodeCB)
     RETURN    
 !----------------------------------
