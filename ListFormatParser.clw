@@ -26,6 +26,7 @@
 ! 29-Dec-2021  Help buttons open CW Help for List with CwHelpListPopup(). Tabs "From, Help, Que2Fmt, SimpleFmt" add Help button.
 ! 05-Jan-2022  Que2Fmt new "+Window+List" button generates WINDOW and LIST with FORMAT see GenFmt.CopyWindowAndListBtn()
 ! 05-Jan-2022  Que2Fmt new "Q Fields =" button generates Que:Field= for all fields see GenFmt.CopyFieldsEqualBtn()
+! 07-Jan-2022  Que2Fmt "Q Fields =" button now has 3 more options: "1_Que:Field = 2_Que:Field" and "Field LIKE(Que:Field)" 2 ways
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -66,9 +67,10 @@ ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
 InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt, *LONG OutLeftPos, *LONG OutRightPos, <*STRING OutBetweenStr>),LONG,PROC !Returns -1 Not Found or Length Between may =0
 No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Clipped
 NoTabs              PROCEDURE(*STRING Txt)               !Change Tabs 09 to Space
-ReplaceInto         PROCEDURE(*STRING Into, STRING FindTxt,STRING ReplaceTxt,BYTE ClipInto=0),LONG,PROC !Return Count
+PopupUnder          PROCEDURE(LONG CtrlFEQ, STRING PopMenu),LONG
 Picture_N_Width     PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture ),SHORT,PROC 
 PreviewList         PROCEDURE(STRING pListFormat)
+ReplaceInto         PROCEDURE(*STRING Into, STRING FindTxt,STRING ReplaceTxt,BYTE ClipInto=0),LONG,PROC !Return Count
 DB                  PROCEDURE(STRING DbTxt) 
         MODULE('Win')
 OutputDebugString   PROCEDURE(*cstring Msg),PASCAL,RAW,NAME('OutputDebugStringA'),DLL(1)
@@ -1366,34 +1368,55 @@ CodeCB ANY
 QX USHORT,AUTO
 LenFld USHORT,AUTO
 AField PSTRING(256)
-MaxLen USHORT
+MaxLen USHORT 
+CodeType BYTE,AUTO
     CODE
+    CodeType=PopupUnder(?,'PreQ:Field = |PreQ:Field = 2_PreQ:Field |-|Field LIKE(PreQ:Field)|NewPre::Field LIKE(PreQ:Field)')
+    IF ~CodeType THEN RETURN.
     LOOP QX=1 TO RECORDS(GQFieldsQ)
         GET(GQFieldsQ,QX)
         LenFld=LEN(CLIP(GQFldQ:Pre_Label))
         IF LenFld > MaxLen THEN MaxLen = LenFld.
     END
-    
-    CodeCB =    'CLEAR(' & GenQue_Name &')'
+
+    CASE CodeType 
+    OF 1 ; CodeCB = 'CLEAR(' & GenQue_Name &')' !    ! FREE(' & GenQue_Name &')'
+    OF 2 ; CodeCB = 'CLEAR(1__' & GenQue_Name &')'
+    OF 3 ; CodeCB = 'Like_' & GenQue_Name &'  QUEUE GROUP , PRE(1_Pre)'
+    OF 4 ; CodeCB = 'Like_' & GenQue_Name &'  QUEUE GROUP , PRE()     !For IDE that can have trouble with PRE(xxx) e.g. BRw1::xxx'
+    END    
     LOOP QX=1 TO RECORDS(GQFieldsQ)
         GET(GQFieldsQ,QX)
         LenFld=LEN(CLIP(GQFldQ:Pre_Label))  
         IF ~LenFld THEN CYCLE.
-        AField = GQFldQ:Pre_Label[1 : LenFld] & ALL(' ',MaxLen -LenFld) & ' = ' 
+        AField = GQFldQ:Pre_Label[1 : LenFld] & ALL(' ',MaxLen-LenFld) 
+        CASE CodeType 
+        OF 1 ; AField = AField &' = '
+        OF 2 ; AField = '1_'& AField &' = 2_'& AField           ! 1_Pre:xxx = 2_Pre:xxx
+        OF 3 ; AField = CLIP(GQFldQ:Label) & ALL(' ',MaxLen-LenFld) &' LIKE('& GQFldQ:Pre_Label[1 : LenFld] & ALL(' ',MaxLen-LenFld) &')' 
+        OF 4 ; AField = '1_Pre::' & CLIP(GQFldQ:Label) & ALL(' ',MaxLen-LenFld) &' LIKE('& GQFldQ:Pre_Label[1 : LenFld] & ALL(' ',MaxLen-LenFld) &')' 
+        END
         IF GQFldQ:OmitHow OR UPPER(GQFldQ:Type)='GROUP' THEN 
            AField = AField & '    ! ' & GQFldQ:OmitHow &'  '& GQFldQ:Type
         END 
         CodeCB = CodeCB & CLIP('<13,10>' & AField )
-    END        
-    CodeCB = CodeCB & |
-    '<13,10>!ADD('& GenQue_Name & ') ' &|
-    '<13,10>' & |
-    '<13,10>!LOOP QNdx=1 TO RECORDS('& GenQue_Name &')  ! TO 1 BY -1' & |   !Gen Common Looping Code
-    '<13,10>!   GET('& GenQue_Name &',QNdx)' & |
-    '<13,10>!   !PUT DELETE ('& GenQue_Name &')' & |
-    '<13,10>!END' & |
-    '<13,10>'
-    
+    END
+    CASE CodeType 
+    OF 1   ; CodeCB = CodeCB & '<13,10>!ADD('& GenQue_Name & ') '
+    OF 2   ; CodeCB = CodeCB & '<13,10>!ADD(1__'& GenQue_Name & ') '
+    OF   3 
+    OROF 4 ; CodeCB = CodeCB & '<13,10> {5}END<13,10>'
+    END 
+    CASE CodeType 
+    OF 1 OROF 2    
+       CodeCB = CodeCB & |
+       '<13,10>' & |
+       '<13,10>!LOOP QNdx=1 TO RECORDS('& GenQue_Name &')  ! TO 1 BY -1' & |   !Gen Common Looping Code
+       '<13,10>!   GET('& GenQue_Name &',QNdx)' & |
+       '<13,10>!   !PUT DELETE ('& GenQue_Name &')' & |
+       '<13,10>!END' & |
+       '<13,10>'
+    END    
     SETCLIPBOARD(CodeCB)
     RETURN    
 !----------------------------------
@@ -2375,6 +2398,14 @@ N LONG,AUTO
         END
     END
     RETURN
+PopupUnder PROCEDURE(LONG CtrlFEQ, STRING PopMenu)!,LONG
+X LONG,AUTO
+Y LONG,AUTO
+H LONG,AUTO
+    CODE
+    GETPOSITION(CtrlFEQ,X,Y,,H)
+    IF CtrlFEQ{PROP:InToolBar} THEN Y -= (0{PROP:ToolBar}){PROP:Height}.
+    RETURN POPUP(PopMenu,X,Y+H+1,1) 
 ReplaceInto PROCEDURE(*STRING Into, STRING Find,STRING Repl,BYTE ClipInto=0)!,LONG,PROC !Return Count
 X   LONG,AUTO
 L   LONG,AUTO
