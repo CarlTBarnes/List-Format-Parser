@@ -27,6 +27,7 @@
 ! 05-Jan-2022  Que2Fmt new "+Window+List" button generates WINDOW and LIST with FORMAT see GenFmt.CopyWindowAndListBtn()
 ! 05-Jan-2022  Que2Fmt new "Q Fields =" button generates Que:Field= for all fields see GenFmt.CopyFieldsEqualBtn()
 ! 07-Jan-2022  Que2Fmt "Q Fields =" button now has 3 more options: "1_Que:Field = 2_Que:Field" and "Field LIKE(Que:Field)" 2 ways
+! 05-May-2022  QuoteFix CODE pasted in ClarionHub changes Single 'Quotes' CHR(39) to 91h,92h TypeSetter Quotes, also "Double" to 93h,94h
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -164,6 +165,7 @@ Tabs1Line       BOOL
             SELECT(CHOOSE(Fmt:Format OR ~From:From,?TabFormatLines,?TabFROM)) 
             DISPLAY
 
+        OF ?QuoteFixBtn      ; DO QuoteFixTypeSetterRtn
         OF ?CopyLineFmtBtn   ; SETCLIPBOARD(Fmt:InLines)
         OF ?CopyExplainBtn   ; SETCLIPBOARD(Fmt:Explain)  
         OF ?CopyLineFmtPlusExplainBtn ; SETCLIPBOARD(CLIP(Fmt:InLines) &'<13,10>' & Fmt:Explain ) 
@@ -606,7 +608,23 @@ ChOut   LONG,AUTO
     ADD(HistoryQ,1)
     ?TabHistory{PROP:text}=' History (' & RECORDS(HistoryQ) &') '
     EXIT 
-     
+!--------------------
+QuoteFixTypeSetterRtn ROUTINE !05/28/22 Change Typesetter quotes to normal so code works here and in Clarion
+   DATA
+X  LONG
+   CODE
+   LOOP X=1 TO SIZE(ListControl)
+        CASE VAL(ListControl[X])
+        OF 91h OROF 92h ; ListControl[X]=''''     !Typesetter single quotes ‘’ to CHR(39) 27h '
+        OF 93h OROF 94h ; ListControl[X]='"'      !Typesetter double quotes “” to CHR(34) 22h "
+        END
+   END
+   DISPLAY
+   EXIT
+!FYI have seen some *[] removed. Assume it is Markdown formatting applied then hidden. Nothing I can do. 
+!The * is Color so not likely to break format. 
+!The [] are Groups so it will likely break the Format. Could try to find unmatched pairs and fix or remove.
+!Saw this ")@s50@](200)|F~" have ](200) removed so "@s50@|F~"
 !------------------------------------------------------------------------
 Format2QCls.Parse2Q         PROCEDURE(CONST *STRING Fmt, *STRING TokFmt) 
 LnFmt   LONG,AUTO

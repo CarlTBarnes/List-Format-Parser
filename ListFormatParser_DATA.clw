@@ -240,7 +240,7 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 BUTTON('&Process<13,10>LIST'),AT(127,21,58,22),USE(?ProcessBtn),ICON(ICON:VCRplay),LEFT
                 TEXT,AT(7,49,,226),FULL,USE(ListControl),HVSCROLL,FONT('Consolas',10)
                 BUTTON('&Close'),AT(193,21,42,22),USE(?CloseBtn),SKIP,STD(STD:Close)
-                BUTTON('&ReRun'),AT(425,21,35,18),USE(?RunAgainBtn),SKIP,TIP('Run Another Instance')
+                BUTTON('&ReRun'),AT(425,21,35,18),USE(?RunAgainBtn),SKIP,TIP('Run Another Instance')        
                 CHECK('Debug Tabs'),AT(245,21),USE(DebugTabs),SKIP,TIP('Show debug Message() during ' & |
                         'process')
                 CHECK('Dbg Messages'),AT(245,32),USE(DebugMsgs),SKIP,TIP('Show debug Message() durin' & |
@@ -254,7 +254,12 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                         'ple Code')
                 PROMPT('Paste your LIST,FORMAT(),#FIELD() code above and press the Process List butt' & |
                         'on to see it parsed'),AT(43,283),USE(?Instrux)
-                BUTTON,AT(6,279,18,18),USE(?CopyListBtn),SKIP,ICON(ICON:Copy),TIP('Copy List Code')
+                BUTTON,AT(6,279,18,18),USE(?CopyListBtn),SKIP,ICON(ICON:Copy),TIP('Copy List Code') 
+                BUTTON('Fix <91h>Typesetter<92h> to Code <39>Quotes<39>'),AT(6,304,133,18), |
+                        USE(?QuoteFixBtn),SKIP,TIP('Fix Typesetter Quotes <91h,92h,93h,94h> 91h,92h,' & |
+                        '93h,94h <13,10>to be Code ''Single'' / "Double" Quotes 27h,22h<13,10><13>' & |
+                        '<10>When code is pasted into ClarionHub <13,10>it has Quotes changed, this ' & |
+                        'fixes that.<13,10>Markdown may remove other formating like * [ ]')
             END
             TAB(' &FORMAT Lines '),USE(?TabFormatLines),TIP('FORMAT() and #FIELDS() parsed to one co' & |
                     'lumn per line')
