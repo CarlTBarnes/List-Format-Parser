@@ -115,7 +115,10 @@ ListFormatParser    PROCEDURE()
 DoResizePosted  BOOL
 Tabs1Line       BOOL
     CODE
-    SYSTEM{PROP:PropVScroll}=1 ; SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY
+    SYSTEM{PROP:PropVScroll}=1                              !Present in C6.3
+        COMPILE('**C11**', _C110_) 
+    SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY             !Added in C11 for Default Message() Mode
+                 **C11**
     ListControl = GetExample(3,GenQue_TextQ)
     GenFmt.SimpleLoadConfig()
     OPEN(Window)
@@ -1492,7 +1495,7 @@ GenMD EQUATE(0)  !Gen Markdown Table of Pictures for my GitHub
        CHANGE(FEQ,NewPic)
        POST(EVENT:Accepted,FEQ)
     END
-    IF GenMD THEN SETCLIPBOARD(MrkDn &'<13,10,13,10>'& PupTxt) ; Message('MD on Clip').
+    IF GenMD THEN SETCLIPBOARD(MrkDn &'<13,10,13,10>'& PupTxt) ; Message('MarkDown on Clip','GenMD').
     RETURN
 DateRtn ROUTINE
     FmtLong=DATE(11,22,3333)
@@ -2096,7 +2099,7 @@ GenFmt.BangPictureBtn PROCEDURE()
      '|    Put "Heading Text" after the ] e.g. ]Last Modified'&|
      '|-{40}|Example:'&|
      '|LastRunTime  LONG  !@T4b'&|
-     '|MeaningLess  LONG  !OMIT', 'Format Generation Picture', ICON:Help)    
+     '|MeaningLess  LONG  !OMIT', 'Format Generation Picture', ICON:Help,,,MSGMODE:CANCOPY)    
 !----------------------------------    
 GenFmt.List:GQFieldsQ_TakeEvent PROCEDURE()
 GQChoice LONG,AUTO
