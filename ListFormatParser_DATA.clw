@@ -5,9 +5,10 @@ FlattenCls      CBCodeFlattenClass
 ParserCls       CBCodeParseClass
 ListControl     STRING(6000)
 ListFlat        STRING(6000)
-ListParsed      STRING(9000)  !List Lines tab with Attribs and Format one per line
+ListParsed      STRING(12000)  !List Lines tab with Attribs and Format one per line
 DebugTabs        BYTE
 DebugMsgs        BYTE
+LengthsString   STRING(255)
 
 FormatGrp  GROUP,PRE()    !Pre(Fmt)
 Fmt:Found           BOOL
@@ -19,8 +20,8 @@ Fmt:Quote2  LONG
 Fmt:IsLast  BOOL             !10/02/18 FORMAT() is last so do not append Comma+Pipe
 Fmt:Format  STRING(4000)     !Format string extracted from LIST
 Fmt:TokFmt  STRING(4000)     !Format in my token format
-Fmt:InLines STRING(4000)     !Format() one per line in my token format
-Fmt:Explain STRING(9000)     !Comments about the Format
+Fmt:InLines STRING(8000)     !Format() one per line in my token format
+Fmt:Explain STRING(12000)    !Comments about the Format
         END
 
 FromGrp  GROUP,PRE()         !11/08/21 Add a FROM Tab
@@ -43,7 +44,7 @@ Flds:Paren1  LONG
 Flds:Paren2  LONG
 Flds:FieldsFlat STRING(2000)  !Flat without returns
 Flds:InLines    STRING(2000)  !For TEXT aligned with Fmt:InLines
-Flds:FieldsCode CSTRING(3000) !In Lines with Pipes
+Flds:FieldsCode CSTRING(4000) !In Lines with Pipes
         END
 
 FormatQ     QUEUE,PRE(FmtQ)     !         FORMAT( parsed into Fields
@@ -553,7 +554,8 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 TEXT,AT(9,40),FULL,USE(ListFlat),VSCROLL,FONT('Consolas',10)
             END
             TAB(' Parsed '),USE(?TabParsed)
-                STRING('Lengths'),AT(7,24),USE(?Lengths)
+                PROMPT('Lengths'),AT(7,24),USE(?Lengths:Prompt)
+                ENTRY(@s255),AT(40,23,,11),FULL,USE(LengthsString),SKIP,TRN
                 PROMPT('Format'),AT(7,39),USE(?Fmt:Format:Prompt)
                 TEXT,AT(40,41,,90),FULL,USE(Fmt:Format),VSCROLL,FONT('Consolas',10),TIP('Fmt:Format')
                 PROMPT('Format<13,10>Tokens<13,10>Only'),AT(7,135,,30),USE(?Fmt:TokFmt:Prompt)

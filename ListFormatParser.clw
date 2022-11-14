@@ -306,7 +306,7 @@ TabHideSyncRtn ROUTINE
     IF DebugTabs AND 0{PROP:Width}<620 THEN 0{PROP:Width}=620.
 
 LengthsTextRtn ROUTINE  !Debug info on screen to know STRING's are big enough
-    ?Lengths{PROP:Text}='Lengths: LIST ' & LEN(CLIP(ListControl)) &' , ' & |
+    LengthsString =  'LIST ' & LEN(CLIP(ListControl))         &', ' & |
                      'Fmt Lines ' & LEN(CLIP(Fmt:InLines))    &', ' & |
                      'FldsLines ' & LEN(CLIP(Flds:InLines))   &', ' & |
                      'FldsCode ' & LEN(CLIP(Flds:FieldsCode)) &', ' & |
