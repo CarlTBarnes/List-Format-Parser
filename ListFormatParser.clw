@@ -28,6 +28,7 @@
 ! 05-Jan-2022  Que2Fmt new "Q Fields =" button generates Que:Field= for all fields see GenFmt.CopyFieldsEqualBtn()
 ! 07-Jan-2022  Que2Fmt "Q Fields =" button now has 3 more options: "1_Que:Field = 2_Que:Field" and "Field LIKE(Que:Field)" 2 ways
 ! 05-May-2022  QuoteFix CODE pasted in ClarionHub changes Single 'Quotes' CHR(39) to 91h,92h TypeSetter Quotes, also "Double" to 93h,94h
+! 15-Nov-2022  Parsed tab improved LengthsText to help size variables big enough for code (check Debug tabs to see Parsed tab) see LengthsTextRtn ROUTINE 
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -66,6 +67,9 @@ GetExample          PROCEDURE(BYTE ExpNo, <*STRING GenQueFmtExample>),STRING
 ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos, STRING HelpBtnFEQ) 
 ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
 InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt, *LONG OutLeftPos, *LONG OutRightPos, <*STRING OutBetweenStr>),LONG,PROC !Returns -1 Not Found or Length Between may =0
+LenSizeText         PROCEDURE(STRING VariableName, *STRING StringVar),STRING  !to fill in LengthsText
+LenSizeText         PROCEDURE(STRING VariableName, *CSTRING StringVar),STRING  !to fill in LengthsText
+LenSizeText         PROCEDURE(STRING VariableName, *? StringVar, LONG StringSize),STRING  !to fill in LengthsText
 No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Clipped
 NoTabs              PROCEDURE(*STRING Txt)               !Change Tabs 09 to Space
 PopupUnder          PROCEDURE(LONG CtrlFEQ, STRING PopMenu),LONG
@@ -104,6 +108,7 @@ ModifierHelp STRING(' <166> = Right Border <13,10> M = Resizable ' &|
      '<13,10> T(s)=Tree (Surpress: B=Boxes I=Indent L=Lines R=Root 1=Offset) ' &|
      '<13,10>' &|
      '<13,10> Queue Order: *Color - Icon index - Tree level - Y style code - P tip' )
+LenMinFreePct LONG     
 !endRegion
 
   CODE  
@@ -306,7 +311,24 @@ TabHideSyncRtn ROUTINE
     IF DebugTabs AND 0{PROP:Width}<620 THEN 0{PROP:Width}=620.
 
 LengthsTextRtn ROUTINE  !Debug info on screen to know STRING's are big enough
-    LengthsString =  'LIST ' & LEN(CLIP(ListControl))         &', ' & |
+    LenMinFreePct = 100
+    LengthsText = |
+     LenSizeText('ListControl'    , ListControl    ) & |
+     LenSizeText('Fmt:InLines'    , Fmt:InLines    ) & |
+     LenSizeText('Flds:InLines'   , Flds:InLines   ) & |
+     LenSizeText('Flds:FieldsCod', Flds:FieldsCode) & |
+     LenSizeText('Fmt:Explain'    , Fmt:Explain    ) & |
+     LenSizeText('ListParsed'     , ListParsed     ) & |
+     LenSizeText('ListFlat'       , ListFlat       ) & |
+     LenSizeText('Fmt:Format'     , Fmt:Format     ) & |
+     LenSizeText('Flds:FieldsFla', Flds:FieldsFlat) & |     
+     LenSizeText('Fmt:TokFmt'     , Fmt:TokFmt     ) & |
+     LenSizeText('From:From'      , From:From      ) & |
+     LenSizeText('From:InLines'   , From:InLines   ) & |
+     LenSizeText('From:CASE'      , From:CASE      )
+    
+    LengthsText = CLIP(LengthsText) &'<13,10>Old: ' &  |
+                     'LIST ' & LEN(CLIP(ListControl))         &', ' & |
                      'Fmt Lines ' & LEN(CLIP(Fmt:InLines))    &', ' & |
                      'FldsLines ' & LEN(CLIP(Flds:InLines))   &', ' & |
                      'FldsCode ' & LEN(CLIP(Flds:FieldsCode)) &', ' & |
@@ -319,6 +341,15 @@ LengthsTextRtn ROUTINE  !Debug info on screen to know STRING's are big enough
                      'FROM ' & LEN(CLIP(From:From))           &', ' & | 
                      'Lines ' & LEN(CLIP(From:InLines))       &', ' & |
                      'Case ' & LEN(CLIP(From:CASE))           &' bytes'
+   ?Lengths:Prompt{PROP:Tip}= LenSizeText('LengthsText' , LengthsText )
+   IF LenMinFreePct < 5 THEN 
+      UNHIDE(?TabParsed) 
+      ?LengthsText{PROP:Color}=0E6E6FFh
+      SELECT(?LengthsText)
+      DISPLAY
+      Message('The lenghts of some variables may be too small for the LIST you pasted.|Review the bottom of the Parsed tab.||'& CLIP(LengthsText),'LengthsTextRtn ROUTINE')
+   END 
+    EXIT
 
 ParseRtn ROUTINE
     CLEAR(FormatGrp) ;   FREE(FormatQ)    
@@ -2396,6 +2427,31 @@ PosRight LONG,AUTO
         OutBetweenStr=CHOOSE(OutLength<1,'',SearchTxt[PosLeft : PosRight])
     END
     RETURN OutLength
+!====================================================
+LenSizeText  PROCEDURE(STRING VariableName, *STRING StringVar)  
+    CODE
+    RETURN LenSizeText(VariableName,StringVar,SIZE(StringVar))
+LenSizeText  PROCEDURE(STRING VariableName, *CSTRING StringVar)
+    CODE
+    RETURN LenSizeText(VariableName,StringVar,SIZE(StringVar))
+LenSizeText  PROCEDURE(STRING VariableName, *? StringVar, LONG StringSize) !Used by LengthsTextRtn ROUTINE  to fill in LengthsText
+L  LONG,AUTO
+S  LONG,AUTO
+F  LONG,AUTO
+FPct LONG,AUTO
+StrPart STRING('String(12345)')
+UsedPart STRING(6),AUTO
+FreePart STRING(6),AUTO
+    CODE
+    L=LEN(CLIP(StringVar))
+    S=StringSize    !SIZE(StringVar)
+    F=S-L
+    StrPart='String('& S &')'
+    UsedPart = L
+    FreePart = F
+    FPct=INT(F/S*100)
+    IF FPct < LenMinFreePct THEN LenMinFreePct=FPct.
+    RETURN VariableName &' <9>' & StrPart &' used '& UsedPart & FORMAT(INT(L/S*100),@n3) &'% = '& FreePart &'free '& FORMAT(FPct,@n3) &'% <13,10>'
 !====================================================
 No1310 PROCEDURE(STRING Txt)
 N USHORT,AUTO

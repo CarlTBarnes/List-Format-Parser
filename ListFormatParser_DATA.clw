@@ -3,12 +3,12 @@
 Ndx             LONG
 FlattenCls      CBCodeFlattenClass
 ParserCls       CBCodeParseClass
-ListControl     STRING(6000)
+ListControl     STRING(8000)
 ListFlat        STRING(6000)
-ListParsed      STRING(12000)  !List Lines tab with Attribs and Format one per line
+ListParsed      STRING(32000)  !List Lines tab with Attribs and Format one per line
 DebugTabs        BYTE
 DebugMsgs        BYTE
-LengthsString   STRING(255)
+LengthsText      STRING(1200)
 
 FormatGrp  GROUP,PRE()    !Pre(Fmt)
 Fmt:Found           BOOL
@@ -20,8 +20,8 @@ Fmt:Quote2  LONG
 Fmt:IsLast  BOOL             !10/02/18 FORMAT() is last so do not append Comma+Pipe
 Fmt:Format  STRING(4000)     !Format string extracted from LIST
 Fmt:TokFmt  STRING(4000)     !Format in my token format
-Fmt:InLines STRING(8000)     !Format() one per line in my token format
-Fmt:Explain STRING(12000)    !Comments about the Format
+Fmt:InLines STRING(10000)    !Format() one per line in my token format
+Fmt:Explain STRING(24000)    !Comments about the Format
         END
 
 FromGrp  GROUP,PRE()         !11/08/21 Add a FROM Tab
@@ -42,9 +42,9 @@ Flds:Records LONG
 Flds:BegPos  LONG
 Flds:Paren1  LONG
 Flds:Paren2  LONG
-Flds:FieldsFlat STRING(2000)  !Flat without returns
-Flds:InLines    STRING(2000)  !For TEXT aligned with Fmt:InLines
-Flds:FieldsCode CSTRING(4000) !In Lines with Pipes
+Flds:FieldsFlat STRING(2400)  !Flat without returns
+Flds:InLines    STRING(3000)  !For TEXT aligned with Fmt:InLines
+Flds:FieldsCode CSTRING(5000) !In Lines with Pipes
         END
 
 FormatQ     QUEUE,PRE(FmtQ)     !         FORMAT( parsed into Fields
@@ -554,17 +554,18 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
                 TEXT,AT(9,40),FULL,USE(ListFlat),VSCROLL,FONT('Consolas',10)
             END
             TAB(' Parsed '),USE(?TabParsed)
-                PROMPT('Lengths'),AT(7,24),USE(?Lengths:Prompt)
-                ENTRY(@s255),AT(40,23,,11),FULL,USE(LengthsString),SKIP,TRN
-                PROMPT('Format'),AT(7,39),USE(?Fmt:Format:Prompt)
-                TEXT,AT(40,41,,90),FULL,USE(Fmt:Format),VSCROLL,FONT('Consolas',10),TIP('Fmt:Format')
-                PROMPT('Format<13,10>Tokens<13,10>Only'),AT(7,135,,30),USE(?Fmt:TokFmt:Prompt)
-                TEXT,AT(40,136,,90),FULL,USE(Fmt:TokFmt),VSCROLL,FONT('Consolas',10),TIP('Fmt:TokFmt')
-                PROMPT('#Fields'),AT(7,231),USE(?Flds:FieldsFlat:Prompt)
-                TEXT,AT(40,232,,90),FULL,USE(Flds:FieldsFlat),VSCROLL,FONT('Consolas',10), |
+                PROMPT('Format'),AT(7,22),USE(?Fmt:Format:Prompt)
+                TEXT,AT(40,24,,90),FULL,USE(Fmt:Format),VSCROLL,FONT('Consolas',10),TIP('Fmt:Format')
+                PROMPT('Format<13,10>Tokens<13,10>Only'),AT(7,118,,30),USE(?Fmt:TokFmt:Prompt)
+                TEXT,AT(40,119,,90),FULL,USE(Fmt:TokFmt),VSCROLL,FONT('Consolas',10),TIP('Fmt:TokFmt')
+                PROMPT('#Fields'),AT(7,214),USE(?Flds:FieldsFlat:Prompt)
+                TEXT,AT(40,215,,90),FULL,USE(Flds:FieldsFlat),VSCROLL,FONT('Consolas',10), |
                         TIP('Flds:FieldsFlat')
-                STRING('Strings parsed from the original input used to extract the data into Queues.'), |
-                        AT(40,335),USE(?WtfIsParse)
+                STRING('Above are Strings parsed from the original input used to extract the data in' & |
+                        'to Queues. Below are the length and size to help decide if they need to be ' & |
+                        'longer.'),AT(9,309),USE(?WtfIsParse)
+                STRING('Lengths'),AT(9,324),USE(?Lengths:Prompt)
+                TEXT,AT(40,322),FULL,USE(LengthsText),VSCROLL,FONT('Consolas',10)
             END
             TAB('FormatQ'),USE(?TabFormatQ),TIP('Debug Format() Parse')
                 TEXT,AT(8,20,,55),FULL,USE(Fmt:Format,, ?Fmt:Format:2),VSCROLL,FONT('Consolas',10), |
