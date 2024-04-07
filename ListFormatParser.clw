@@ -29,6 +29,7 @@
 ! 07-Jan-2022  Que2Fmt "Q Fields =" button now has 3 more options: "1_Que:Field = 2_Que:Field" and "Field LIKE(Que:Field)" 2 ways
 ! 05-May-2022  QuoteFix CODE pasted in ClarionHub changes Single 'Quotes' CHR(39) to 91h,92h TypeSetter Quotes, also "Double" to 93h,94h
 ! 15-Nov-2022  Parsed tab improved LengthsText to help size variables big enough for code (check Debug tabs to see Parsed tab) see LengthsTextRtn ROUTINE 
+! 05-Apr-2024  Refactor code around Open(Window) to use new ListMakeOver().
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -70,6 +71,7 @@ InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt
 LenSizeText         PROCEDURE(STRING VariableName, *STRING StringVar),STRING  !to fill in LengthsText
 LenSizeText         PROCEDURE(STRING VariableName, *CSTRING StringVar),STRING  !to fill in LengthsText
 LenSizeText         PROCEDURE(STRING VariableName, *? StringVar, LONG StringSize),STRING  !to fill in LengthsText
+ListMakeOver        PROCEDURE(LONG ListFEQ, LONG ExtraLineHt, BOOL NoGridColor=False)   !Set LIST Grid Color and Line Height
 No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Clipped
 NoTabs              PROCEDURE(*STRING Txt)               !Change Tabs 09 to Space
 PopupUnder          PROCEDURE(LONG CtrlFEQ, STRING PopMenu),LONG
@@ -138,13 +140,14 @@ Tabs1Line       BOOL
     ?Sheet1{PROP:BrokenTabs}=1        !this does not seem to work with the office style tabs
     ?Sheet1{PROP:NoSheet}=1 ; ?Sheet1{PROP:Below}=1
     DO TabHideSyncRtn
-    ?LIST:HistoryQ{PROP:LineHeight} = 2 + ?LIST:HistoryQ{PROP:LineHeight}
+    ListMakeOver(?LIST:HistoryQ ,2)
     ?List:ModifierQ{PROPLIST:HasSortColumn}=1 
-    ?LIST:ModifierQ{PROPLIST:Grid}=Color:Silver ; ?LIST:GQFieldsQ{PROPLIST:Grid}=Color:Silver
+    ListMakeOver(?LIST:ModifierQ,0) ; ListMakeOver(?LIST:GQFieldsQ,0) 
+    ListMakeOver(?LIST:FormatQ,1)   ; ListMakeOver(?LIST:FieldsQ,1) ; ListMakeOver(?LIST:ExplainQ,1) 
     ?Sheet1{PROP:NoTheme}=1  !For Manifest
     HelpCls.Init()    
     IF GenQue:SelectTabAtOpen THEN SELECT(?TabGenQueue).
-    ACCEPT   
+    ACCEPT  
         CASE EVENT()
         OF EVENT:CloseWindow ; LOOP Ndx=2 TO 64 ; POST(EVENT:CloseWindow,,Ndx) ; END
 !        OF EVENT:Sized      ; IF ~DoResizePosted THEN POST(EVENT:DoResize). ; DoResizePosted=1
@@ -301,7 +304,7 @@ Tabs1Line       BOOL
     END
     CLOSE(Window)
     RETURN
-
+!---------------------------
 TabHideSyncRtn ROUTINE 
     ?TabFlat{PROP:Hide}   =1-DebugTabs
     ?TabParsed{PROP:Hide} =1-DebugTabs
@@ -309,7 +312,7 @@ TabHideSyncRtn ROUTINE
     ?TabFieldsQ{PROP:Hide}=1-DebugTabs
     ?TabExplainQ{PROP:Hide}=1-DebugTabs
     IF DebugTabs AND 0{PROP:Width}<620 THEN 0{PROP:Width}=620.
-
+!---------------------------
 LengthsTextRtn ROUTINE  !Debug info on screen to know STRING's are big enough
     LenMinFreePct = 100
     LengthsText = |
@@ -2452,6 +2455,14 @@ FreePart STRING(6),AUTO
     FPct=INT(F/S*100)
     IF FPct < LenMinFreePct THEN LenMinFreePct=FPct.
     RETURN VariableName &' <9>' & StrPart &' used '& UsedPart & FORMAT(INT(L/S*100),@n3) &'% = '& FreePart &'free '& FORMAT(FPct,@n3) &'% <13,10>'
+!====================================================
+ListMakeOver PROCEDURE(LONG ListFEQ, LONG ExtraLineHt, BOOL NoGridColor=False)   !Set LIST Grid Color and Line Height
+    CODE
+    IF ~NoGridColor THEN ListFEQ{PROPLIST:Grid}=COLOR:3DLight.   !or Color:Silver
+    IF ExtraLineHt
+       ListFEQ{PROP:LineHeight} = ExtraLineHt + ListFEQ{PROP:LineHeight}
+    END
+    RETURN
 !====================================================
 No1310 PROCEDURE(STRING Txt)
 N USHORT,AUTO

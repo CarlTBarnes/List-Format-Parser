@@ -64,7 +64,7 @@ In Source control comparing a LIST,FORMAT() and #FIELDS() as a multiline block c
 
 ![compare1](images/compare1.png)
 
-Below shows comparing the Format split into lines and it becomes more clean some columns titled Stae and Zip were added plus a new [ Group ].
+Below shows comparing the Format split into lines and it becomes more clear two columns titled State and Zip were added, plus a new [ Group ].
 
 ![compare2](images/compare2.png)
 
