@@ -30,6 +30,7 @@
 ! 05-May-2022  QuoteFix CODE pasted in ClarionHub changes Single 'Quotes' CHR(39) to 91h,92h TypeSetter Quotes, also "Double" to 93h,94h
 ! 15-Nov-2022  Parsed tab improved LengthsText to help size variables big enough for code (check Debug tabs to see Parsed tab) see LengthsTextRtn ROUTINE 
 ! 05-Apr-2024  Refactor code around Open(Window) to use new ListMakeOver(). Move most code to new PrepareWindowRtn routine
+! 05-Apr-2024  FormatQ correct Group Numbers to be correct not a Sequence number
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -694,12 +695,13 @@ FX      LONG,AUTO
 SegBeg      LONG 
 SegEnd      LONG 
 InGroup     BOOL
-GroupNo     SHORT
+GroupCount  SHORT           !For Grp SEQ 1,2,3 ... Not used as much 04/05/24
+GroupNoNow  SHORT           !Begin of Group #
 FieldNo     SHORT
-SegmentQ    QUEUE,PRE(SegQ)     !figure out the [segments]
+SegmentQ    QUEUE,PRE(SegQ) !figure out the Group [segments]
 SegBeg        SHORT         ! SegQ:SegBeg
 SegEnd        SHORT         ! SegQ:SegEnd
-GrpNo         SHORT         ! SegQ:GrpNo
+GrpSeqNo      SHORT         ! SegQ:GrpSeqNo         !It's 1,2,3 Sequence and NOT the Group No used for PROPLIST:Group
 GrpEnd        SHORT         ! SegQ:GrpEnd  "]" pos
             END      ! SegQ:SegBeg= ; SegQ:SegEnd= ; SegQ:GrpNo= ; SegQ:GrpEnd=
     CODE 
@@ -721,8 +723,8 @@ GrpEnd        SHORT         ! SegQ:GrpEnd  "]" pos
     LOOP FX=2 TO LnFmt+1
          IF InGroup THEN
             IF TokFmt[FX]=']' THEN
-               GroupNo += 1
-               CLEAR(SegmentQ) ; SegQ:GrpNo=GroupNo ; SegQ:GrpEnd=Fx
+               GroupCount += 1
+               CLEAR(SegmentQ) ; SegQ:GrpSeqNo=GroupCount ; SegQ:GrpEnd=Fx
                LOOP !find where [FX+1] is the Start of a new group [] or 1 = Column
                     IF FX=LnFmt OR TokFmt[FX+1]='[' OR TokFmt[FX+1]='1' THEN BREAK.
                     FX += 1
@@ -743,21 +745,23 @@ GrpEnd        SHORT         ! SegQ:GrpEnd  "]" pos
             CYCLE
          END       
     END
+    !WndPrvCls.QueueReflection(SegmentQ,'SegmentQ in Format2QCls.Parse2Q')   !Debug SegmentQ
     LOOP FX=1 TO RECORDS(SegmentQ)   !Add the segments to see them
          GET(SegmentQ,FX)
-         IF ~Segq:GrpNo THEN
+         IF ~SegQ:GrpSeqNo THEN ! Fmt TokFmt, SegPosBeg   SegPosEnd  *NxtFldNo  GroupNo  InsideGrpNo 
             SELF.ParseSegment( Fmt, TokFmt, SegQ:SegBeg, SegQ:SegEnd, FieldNo , 0 )         !Non group segment of columns
             CYCLE
          END 
-         SELF.ParseSegment( Fmt, TokFmt, SegQ:SegBeg, SegQ:SegBeg, FieldNo , Segq:GrpNo )   !Begin Group "[" only
+         GroupNoNow = FieldNo + 1
+         SELF.ParseSegment   ( Fmt, TokFmt, SegQ:SegBeg, SegQ:SegBeg, FieldNo , GroupNoNow , 0 )        !Begin Group "[" only 
          IF SegQ:SegBeg+1 <= SegQ:GrpEnd-1 THEN    
-            SELF.ParseSegment( Fmt, TokFmt, SegQ:SegBeg+1 , SegQ:GrpEnd-1, FieldNo , 0 )    !Between the [brackets] columns in group
+            SELF.ParseSegment( Fmt, TokFmt, SegQ:SegBeg+1 , SegQ:GrpEnd-1, FieldNo , 0 , GroupNoNow )   !Between the [brackets] columns in group
          END
-         SELF.ParseSegment( Fmt, TokFmt, SegQ:GrpEnd, SegQ:SegEnd, FieldNo , -Segq:GrpNo )  !Ending ](size)modifiers         
+         SELF.ParseSegment   ( Fmt, TokFmt, SegQ:GrpEnd, SegQ:SegEnd, FieldNo , -GroupNoNow , 0 )       !Ending ](size)modifiers         
     END       
     RETURN
 !-----------------------    
-Format2QCls.ParseSegment  PROCEDURE(CONST *STRING Fmt, CONST *STRING TokFmt, Long SegPosBeg, Long SegPosEnd, *SHORT NxtFldNo, SHORT GroupNo )  
+Format2QCls.ParseSegment  PROCEDURE(CONST *STRING Fmt, CONST *STRING TokFmt, Long SegPosBeg, Long SegPosEnd, *SHORT NxtFldNo, SHORT GroupNo, SHORT InsideGrpNo=0 )  
 FldBeg      LONG 
 FldEnd      LONG 
 FX          LONG,AUTO
@@ -787,6 +791,7 @@ PndFldNo    SHORT,AUTO     ! 5
             FmtQ:Pos2  = FldEnd 
             FmtQ:LenSpec = FldEnd - FldBeg + 1
             FmtQ:GrpNo = 0  
+            FmtQ:InGrpNo = InsideGrpNo
             FmtQ:FldNo = NxtFldNo
             FmtQ:FieldSpec = Fmt[FldBeg : FldEnd]
             FmtQ:TokenSpec = TokFmt[FldBeg : FldEnd] 
@@ -2487,6 +2492,7 @@ ListMakeOver PROCEDURE(LONG ListFEQ, LONG ExtraLineHt, BOOL NoGridColor=False)  
     IF ExtraLineHt
        ListFEQ{PROP:LineHeight} = ExtraLineHt + ListFEQ{PROP:LineHeight}
     END
+    ListFEQ{PROP:NoTheme}=1  !Makes Heading Gray not White
     RETURN
 !====================================================
 No1310 PROCEDURE(STRING Txt)

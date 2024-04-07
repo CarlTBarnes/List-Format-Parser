@@ -51,8 +51,9 @@ FormatQ     QUEUE,PRE(FmtQ)     !         FORMAT( parsed into Fields
 Pos1            USHORT          !FmtQ:Pos1
 Pos2            USHORT          !FmtQ:Pos2
 LenSpec         SHORT           !FmtQ:LenSpec
-FldNo           SHORT           !FmtQ:FldNo
-GrpNo           SHORT           !FmtQ:GrpNo
+FldNo           SHORT           !FmtQ:FldNo      !This is really Column Number, the "Field #" pertains to Queue
+GrpNo           SHORT           !FmtQ:GrpNo      ! +# for [ open ... and -# for ] close i.e. Groups have 2 records
+InGrpNo         SHORT           !FmtQ:InGrpNo    !04/05/24 can tell if Field inside group
 FieldSpec       STRING(256)     !FmtQ:FieldSpec
 TokenSpec       STRING(256)     !FmtQ:TokenSpec
             END
@@ -62,7 +63,7 @@ Name            STRING(96)      !FldsQ:Name
 Format2QCls CLASS
 Parse2Q         PROCEDURE(CONST *STRING Fmt, *STRING OutTokFmt)
 Format2Token    PROCEDURE(CONST *STRING Fmt, *STRING OutTokFmt, BYTE BlankNoise=1)
-ParseSegment    PROCEDURE(CONST *STRING Fmt, CONST *STRING TokFmt, Long SegPosBeg, Long SegPosEnd, *SHORT NxtFldNo, SHORT ThisGrpNo )
+ParseSegment    PROCEDURE(CONST *STRING Fmt, CONST *STRING TokFmt, Long SegPosBeg, Long SegPosEnd, *SHORT NxtFldNo, SHORT ThisGrpNo, SHORT InsideGrpNo=0 )
 GetLinesFmt     PROCEDURE(*STRING FldsLines),STRING
 GetExplainLines PROCEDURE(),STRING
 TokFmtCmd       PROCEDURE(STRING FindTxt, STRING CmdName),STRING !If Instring FmtTok
@@ -570,9 +571,11 @@ Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRA
             TAB('FormatQ'),USE(?TabFormatQ),TIP('Debug Format() Parse')
                 TEXT,AT(8,20,,55),FULL,USE(Fmt:Format,, ?Fmt:Format:2),VSCROLL,FONT('Consolas',10), |
                         TIP('Fmt:Format')
-                LIST,AT(8,82),FULL,USE(?LIST:FormatQ),VSCROLL,FONT(,9),FROM(FormatQ),FORMAT('26L(2)|' & |
-                        'M~Pos 1~@n4@26L(2)|M~Pos 2~@n4@26L(2)|M~Len~@n-4@20L(2)|M~Fld#~@n2b@20L(2)|' & |
-                        'M~Grp~@n-3b@200L(2)|M~FieldSpec~@s255@200L(2)|M~Token Spec~@s255@')
+                LIST,AT(8,82),FULL,USE(?LIST:FormatQ),VSCROLL,FONT('Consolas',9),FROM(FormatQ), |
+                        FORMAT('28L(2)|M~Beg<0Dh,0Ah>Pos~C(0)@n4@28L(2)|M~End<0Dh,0Ah>Pos~C(0)@n4@26' & |
+                        'L(2)|M~Fmt<0Dh,0Ah>Len~C(0)@n-4@24L(2)|M~Col<0Dh,0Ah>No.~C(0)@n2b@30L(2)|M~' & |
+                        'Grp<0Dh,0Ah>No.~C(0)@n-3b@30L(2)|M~In<0Dh,0Ah>Grp~C(0)@n-3b@200L(2)|M~Forma' & |
+                        't Source~@s255@200L(2)|M~Format Tokens~@s255@')
             END
             TAB('FieldQ'),USE(?TabFieldsQ),TIP('Debug #Fields() Parse')
                 TEXT,AT(8,26,,40),FULL,USE(Flds:FieldsFlat,, ?Flds:FieldsFlat:2),VSCROLL, |
