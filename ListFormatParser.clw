@@ -29,7 +29,7 @@
 ! 07-Jan-2022  Que2Fmt "Q Fields =" button now has 3 more options: "1_Que:Field = 2_Que:Field" and "Field LIKE(Que:Field)" 2 ways
 ! 05-May-2022  QuoteFix CODE pasted in ClarionHub changes Single 'Quotes' CHR(39) to 91h,92h TypeSetter Quotes, also "Double" to 93h,94h
 ! 15-Nov-2022  Parsed tab improved LengthsText to help size variables big enough for code (check Debug tabs to see Parsed tab) see LengthsTextRtn ROUTINE 
-! 05-Apr-2024  Refactor code around Open(Window) to use new ListMakeOver().
+! 05-Apr-2024  Refactor code around Open(Window) to use new ListMakeOver(). Move most code to new PrepareWindowRtn routine
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -122,29 +122,10 @@ ListFormatParser    PROCEDURE()
 DoResizePosted  BOOL
 Tabs1Line       BOOL
     CODE
-    SYSTEM{PROP:PropVScroll}=1                              !Present in C6.3
-        COMPILE('**C11**', _C110_) 
-    SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY             !Added in C11 for Default Message() Mode
-                 **C11**
     ListControl = GetExample(3,GenQue_TextQ)
     GenFmt.SimpleLoadConfig()
     OPEN(Window)
-    0{PROP:MinWidth} =400
-    0{PROP:MinHeight}=0{PROP:Height}/2  !300
-    OMIT('**END**', OmitWndPrv)   
-        WndPrvCls.Init(1)     !WndPreview secret button hover upper left corner and pops up
-        WndPrvCls.InitList(?LIST:HistoryQ    ,HistoryQ    ,'HistoryQ')    !Not required in 11.13505, but below does show Queue Name in WndPreview 
-    !end of OMIT('**END**', OmitWndPrv)
-    
-    ?Sheet1{PROP:TabSheetStyle}=1   
-    ?Sheet1{PROP:BrokenTabs}=1        !this does not seem to work with the office style tabs
-    ?Sheet1{PROP:NoSheet}=1 ; ?Sheet1{PROP:Below}=1
-    DO TabHideSyncRtn
-    ListMakeOver(?LIST:HistoryQ ,2)
-    ?List:ModifierQ{PROPLIST:HasSortColumn}=1 
-    ListMakeOver(?LIST:ModifierQ,0) ; ListMakeOver(?LIST:GQFieldsQ,0) 
-    ListMakeOver(?LIST:FormatQ,1)   ; ListMakeOver(?LIST:FieldsQ,1) ; ListMakeOver(?LIST:ExplainQ,1) 
-    ?Sheet1{PROP:NoTheme}=1  !For Manifest
+    DO PrepareWindowRtn
     HelpCls.Init()    
     IF GenQue:SelectTabAtOpen THEN SELECT(?TabGenQueue).
     ACCEPT  
@@ -304,6 +285,50 @@ Tabs1Line       BOOL
     END
     CLOSE(Window)
     RETURN
+!---------------------------
+PrepareWindowRtn ROUTINE    !Window is Open, get it all squared away
+    DATA
+FldX LONG
+TTip CSTRING(500)    
+    CODE
+    SYSTEM{PROP:PropVScroll}=1                              !make Thumb Proportional 
+        COMPILE('**C11**', _C110_) 
+    SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY             !Added in C11 for Default Message() Mode
+                 **C11**    
+
+    0{PROP:MinWidth} =400 ; 0{PROP:MinHeight}=0{PROP:Height}/2
+    
+    ?Sheet1{PROP:TabSheetStyle}=1   
+    ?Sheet1{PROP:BrokenTabs}=1        !this does not seem to work with the office style tabs
+    ?Sheet1{PROP:NoSheet}=1 
+    ?Sheet1{PROP:Below}=1
+    ?Sheet1{PROP:NoTheme}=1  !For Manifest             
+    IF EXISTS('_ShowDebugTabs_.txt') THEN DebugTabs=1.
+    DO TabHideSyncRtn       
+
+    ListMakeOver(?LIST:HistoryQ,2)
+    ListMakeOver(?LIST:ModifierQ,0)     ; ?List:ModifierQ{PROPLIST:HasSortColumn}=1      
+    ListMakeOver(?LIST:GQFieldsQ,0) 
+    ListMakeOver(?LIST:FormatQ,1) ; ListMakeOver(?LIST:FieldsQ,1) ; ListMakeOver(?LIST:ExplainQ,1) 
+
+    TTip='Run Another Instance<13,10,13,10>'& Command('0') 
+    ?RunAgainBtn{PROP:Tip}=TTip ; ?RunAgainFmtBtn{PROP:Tip}=TTip ; ?RunAgainFromBtn{PROP:Tip}=TTip ; ?RunAgainGFQBtn{PROP:Tip}=TTip
+    
+    0{PROP:Status,1}=-1 ! Remoted into Windows 11 have trouble resizing Window due to FULL lists, so hope Status bar helps
+    0{PROP:Status,2}=70 ; 0{PROP:StatusText,2}='EXE RTL ' & SYSTEM{PROP:ExeVersion,2} &'.'& SYSTEM{PROP:ExeVersion,3}
+    0{PROP:Status,3}=70 ; 0{PROP:StatusText,3}='DLL RTL ' & SYSTEM{PROP:LibVersion,2} &'.'& SYSTEM{PROP:LibVersion,3}
+    0{PROP:Status,4}=0
+    FldX=0
+    LOOP    !Assign Tip to all MSG so it shows in new Status Bar
+        FldX=0{PROP:NextField,FldX} ; IF ~FldX THEN BREAK.
+        IF ~FldX{PROP:Msg} AND FldX{PROP:Tip} THEN FldX{PROP:Msg}=FldX{PROP:Tip}.
+    END
+    OMIT('!**END WndPrv Omit**', OmitWndPrv)   
+        WndPrvCls.Init(1)     !WndPreview secret button hover upper left corner and pops up
+        WndPrvCls.InitList(?LIST:HistoryQ ,HistoryQ ,'HistoryQ')    !Not required in 11.13505, but below does show Queue Name in WndPreview 
+        WndPrvCls.InitList(?LIST:FormatQ  ,FormatQ  ,'FormatQ')
+    !**END WndPrv Omit**
+    EXIT
 !---------------------------
 TabHideSyncRtn ROUTINE 
     ?TabFlat{PROP:Hide}   =1-DebugTabs
