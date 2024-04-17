@@ -80,6 +80,7 @@ PopupUnder          PROCEDURE(LONG CtrlFEQ, STRING PopMenu),LONG
 Picture_N_Width     PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture ),SHORT,PROC 
 PreviewList         PROCEDURE(STRING pListFormat)
 ReplaceInto         PROCEDURE(*STRING Into, STRING FindTxt,STRING ReplaceTxt,BYTE ClipInto=0),LONG,PROC !Return Count
+UppLow              PROCEDURE(*STRING InOutText, LONG How_Up1_Lo2_UpLow3=3)  !1=Upper or 2=Lower or 3=Up[1] + Low[2:end]
 DB                  PROCEDURE(STRING DbTxt) 
         MODULE('Win')
 OutputDebugString   PROCEDURE(*cstring Msg),PASCAL,RAW,NAME('OutputDebugStringA'),DLL(1)
@@ -2558,6 +2559,15 @@ FindCnt LONG
      END
   END
   RETURN FindCnt
+!---------------
+UppLow PROCEDURE(*STRING Txt, LONG HowUPloUplo=3)  !1=Upper or 2=Lower or 3=Up[1] + Low[2:end]
+    CODE
+    CASE HowUPloUplo
+    OF 1        ; Txt=UPPER(Txt)
+    OF 2 OROF 3 ; Txt=lower(Txt)
+           IF 3 = HowUPloUplo AND SIZE(Txt) THEN Txt[1]=UPPER(Txt[1]).
+    END
+    RETURN
 !================================
 Picture_N_Width  PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture )!,SHORT,PROC 
 PicWidth SHORT,AUTO
