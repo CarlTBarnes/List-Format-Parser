@@ -277,39 +277,41 @@ Tabs1Line       BOOL
     RETURN
 !---------------------------
 ProcessBtn_ListControlRtn ROUTINE   !When ProcessBtn is pressed
-    ListFlat=ListControl  
+    ListFlat=ListControl
     FlattenCls.TrimText1310(ListFlat,0)   !Incase pasted format alone with extra CRLF
     IF INSTRING('<13>',ListFlat) THEN FlattenCls.Flatten(ListFlat) .
-    DISPLAY  
+    DISPLAY
     DO ParseRtn
     DO AddHistoryRtn
     Fmt:InLines = Format2QCls.GetLinesFmt(Flds:InLines)
     Fmt:Explain = Format2QCls.GetExplainLines()
-    DO ParseListParsedIntoListLinesRtn      
+    DO ParseListParsedIntoListLinesRtn
+    DO WindowCaptionRtn
     DO LengthsTextRtn
-    SELECT(CHOOSE(Fmt:Format OR ~From:From,?TabFormatLines,?TabFROM)) 
+    SELECT(CHOOSE(Fmt:Format OR ~From:From,?TabFormatLines,?TabFROM))
     DISPLAY
     EXIT
 !---------------------------
 PrepareWindowRtn ROUTINE    !Window is Open, get it all squared away
     DATA
 FldX LONG
-TTip CSTRING(500)    
+TTip CSTRING(500)
     CODE
-    SYSTEM{PROP:PropVScroll}=1                              !make Thumb Proportional 
-        COMPILE('**C11**', _C110_) 
+    SYSTEM{PROP:PropVScroll}=1                                    !make Thumb Proportional
+    SYSTEM{PROP:FontName}='Segoe UI' ; SYSTEM{PROP:FontSize}=10   !Message Font
+        COMPILE('**C11**', _C110_)
     SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY             !Added in C11 for Default Message() Mode
-                 **C11**    
+                 **C11**
 
     0{PROP:MinWidth} =400 ; 0{PROP:MinHeight}=0{PROP:Height}/2
-    
-    ?Sheet1{PROP:TabSheetStyle}=1   
+
+    ?Sheet1{PROP:TabSheetStyle}=1
     ?Sheet1{PROP:BrokenTabs}=1        !this does not seem to work with the office style tabs
-    ?Sheet1{PROP:NoSheet}=1 
+    ?Sheet1{PROP:NoSheet}=1
     ?Sheet1{PROP:Below}=1
-    ?Sheet1{PROP:NoTheme}=1  !For Manifest             
+    ?Sheet1{PROP:NoTheme}=1  !For Manifest
     IF EXISTS('_ShowDebugTabs_.txt') THEN DebugTabs=1.
-    DO TabHideSyncRtn       
+    DO TabHideSyncRtn
 
     ListMakeOver(?LIST:HistoryQ,2)
     ListMakeOver(?LIST:ModifierQ,0)     ; ?List:ModifierQ{PROPLIST:HasSortColumn}=1      
@@ -342,6 +344,21 @@ TabHideSyncRtn ROUTINE
     ?TabFieldsQ{PROP:Hide}=1-DebugTabs
     ?TabExplainQ{PROP:Hide}=1-DebugTabs
     IF DebugTabs AND 0{PROP:Width}<620 THEN 0{PROP:Width}=620.
+!---------------------------
+WindowCaptionRtn ROUTINE
+    DATA
+UseLst    STRING(30)
+FromLst   STRING(30)
+FormatLst STRING(46)
+LF LONG
+    CODE
+    InBetween('USE('     ,')'        ,ListFlat,,,UseLst ,   1)  ; UppLow(UseLst[1:3])
+    InBetween('FROM('    ,')'        ,ListFlat,,,FromLst,   1)  ; UppLow(FromLst[1:4])
+    LF=InBetween('FORMAT(''',''')',ListFlat,,,FormatLst, 1)  ; UppLow(FormatLst[1:6])
+    IF LF > 45 THEN FormatLst=SUB(FormatLst,1,40) &'...'')'.
+    0{PROP:Text}='LIST 411: '& lower(FORMAT(CLOCK(),@t3))   & |
+        CLIP('  '& UseLst ) & CLIP('  '& FromLst) & CLIP('  '& FormatLst) !&' Ln=' & Ln
+    EXIT
 !---------------------------
 LengthsTextRtn ROUTINE  !Debug info on screen to know STRING's are big enough
     LenMinFreePct = 100
@@ -2308,60 +2325,59 @@ ChX     LONG,AUTO
     RETURN RT     
 !================================================ 
 GetExample        PROCEDURE(BYTE ExpNo, <*STRING GenQueFmtExample>)!,STRING
-Exp1 STRING('     LIST,AT(3,22,360,121),USE(?Browse:1),IMM,HVSCROLL,MSG(''Browsing ' &|
-     'Records''),FORMAT(''[27R(2)|M~Cust.~C(0)@n_6@41R(4)|M~Meter~C(0)@n_9@4C|M~P' &|
+Exp1 STRING('     LIST,AT(3,22,360,121),USE(?BrowseMeters),IMM,HVSCROLL,' &|
+     'FORMAT(''[27R(2)|M~Cust.~C(0)@n_6@41R(4)|M~Meter~C(0)@n_9@4C|M~P' &|
      'ort~@n1@](85)|M~I.D. Numb'' &|' &|
      '<13,10>           ''ers~[38R(2)|M~Previous~C(0)@d1@47R(2)|M~Current~C(0)@d1' &|
      '@](76)|M~Reading Dates~[4'' &|' &|
      '<13,10>           ''1R(2)|M~Current~C(0)@n_9@41R(2)|M~Prior~C(0)@n_9@39R(2)' &|
      '|M~Usage~C(0)@n-9@22C|M~M'' &|' &|
      '<13,10>           ''eter~@s1@21C|M~Read~@s1@4C|M~Final~@s1@](224)|M~Reading' &|
-     's~''),FROM(Queue:Browse:1),#SEQ(1), |' &|
-     '<13,10>           #ORIG(?List),#FIELDS(CustMeter:CustIdNo,CustMeter:MeterId' &|
+     's~''),FROM(Queue:BrowseMeters),#SEQ(1), |' &|
+     '<13,10>           #FIELDS(CustMeter:CustIdNo,CustMeter:MeterId' &|
      'No,CustMeter:PortNo,CustMeter:BegReadingDate,CustMeter:CurReadingDate,CustM' &|
      'eter:CurReading,CustMeter:BegReading,CustMeter:Usage,Meters:MeterType,CustM' &|
      'eter:ReadingType,CustMeter:FinalReading)' )
-Exp2  STRING('          LIST,AT(139,11,191,167),USE(?List:2),HVSCROLL,FORMAT(''15R(1)|M' &|
+Exp2  STRING('          LIST,AT(139,11,191,167),USE(?List:EmpTypes),HVSCROLL,FORMAT(''15R(1)|M' &|
      '~Cd.~L@n2@15C(1'' & |' &|
-     '<13,10>            '')|MI@s10@120L(1)|M~Employee Type~@s30@''),FROM(Queue:B' &|
-     'rowse:1),IMM, |' &|
-     '<13,10>            #FIELDS(TYP:Code,Tag,TYP:Desc),#ORIG(?List),#SEQ(7)' )
-Exp3  STRING(' LIST,AT(11,55,656,169),USE(?Browse:1),VSCROLL,FORMAT(''126L(2)|*~Employee Name'' & |' &|
+     '<13,10>            '')|MI@s10@120L(1)|M~Employee Type~@s30@''),FROM(EmpTypeQ),IMM, |' &|
+     '<13,10>            #FIELDS(TYP:Code,Tag,TYP:Desc),#SEQ(7)' )
+Exp3  STRING(' LIST,AT(11,55,656,169),USE(?Browse:Employees),VSCROLL,FORMAT(''126L(2)|*~Employee Name'' & |' &|
      '<13,10>   ''~@s30@?[19C~Type~L(0)@n2@132L(2)|~Description~@s30@](134)|[19R(2)~Bldg.~C('' & |' &|
      '<13,10>   ''0)@n2@100L(2)|~Description~@s25@]|20C|~ Pay<<0DH,0AH>Grp~@n_2@13C|*~St.~@s1'' & |' &|
-     '<13,10>   ''@[30C|~Brd.~@n6.5b@24L|~Emp.~C(0)@n6.5b@](55)|_~TRS Data~46R(3)|~SSN~C(0)@'' & |' &|
-     '<13,10>   ''P###-##-####P@30R(2)|~Emp No~C(0)@N4@28R(2)|~Clock~C(0)@n_6@31R(2)|M~EIN~C'' & |' &|
-     '<13,10>   ''(0)@n_9b@15R(5)|M~EIS<<0DH,0AH>Exempt~C(0)@n3B@''),FROM(Queue:Browse:1),IMM, |' &|
-     '<13,10>   #FIELDS(MST:LastFirstMiddleName,MST:EmpType,TYP:Desc,MST:BldgNo,LOC:BldgDesc,MST:PayGroup, ' &|
-                '|' &|
+     '<13,10>   ''@[30R(2)|~Board~C(0)@n6.2~%~b@24L(2)|~Empl.~C(0)@n6.5b@](55)|_~TRS Data~40R(3)|~SSN~C(0)@'' & |' &|  !@Pic with ~%~
+     '<13,10>   ''P###-##-####P@20R(3)|~Emp<<0DH,0AH>No~C(0)@N_5@24R(2)|~Clock~C(0)@n_6@33R(2)|M~EIN~C'' & |' &|
+     '<13,10>   ''(0)@n_9b@15R(5)|M~EIS<<0DH,0AH>Exempt~C(0)@n3~Exm~B@''),FROM(Queue:Browse:Employees),IMM, |' &|       !@Pic with ~Exm~ Trick to convert Byte to String
+     '<13,10>   #FIELDS(MST:LastFirstMiddleName,MST:EmpType,TYP:Desc,MST:BldgNo,LOC:BldgDesc,MST:PayGroup, |' &|
      '<13,10>   MST:PayStatus,MST:TrsBrdRate[1],MST:TrsEmpRate[1],MST:SSN,MST:EmpNo,MST:ClockNo, |' &|
      '<13,10>   MST:StateEIN,MST:EISExempt)' )  
-Exp4 STRING('Window WINDOW(''LIST Everything''),AT(,,395,224),GRAY,FONT(''Microsoft Sans Serif'',8)' &|
-     '<13,10> LIST,AT(3,2,379,206),USE(?LIST1),FROM(LIST1:Queue),FORMAT(''45L(2)|_FM*IY'' & |' &|
+Exp4 STRING('Window WINDOW(''LIST Everything''),AT(,,395,224),GRAY,FONT(''Segoe UI'',9)' &|
+     '<13,10> LIST,AT(3,2,379,206),USE(?List:Everything),FROM(EverythingQ),FORMAT(''45L(2)|_FM*IY'' & |' &|
      '<13,10>         ''PT(LRB)~Tree List~@s55@Z(5)/?#1#43L(2)|_FM*YPT(LRB)~Everything~'' & |' &|
      '<13,10>         ''@s55@Z(55)Q''''DefaaultTip''''/?#2#56L(2)B(00008000H)|_FM*YPT(LRB)~'' & |' &|
      '<13,10>         ''Everything with Colors~@s55@Z(55)Q''''DefaultTip''''E(00000000H,000'' & |' &|
      '<13,10>         ''00080H,00FFFFFFH,00FF0000H)/?#3#[20L(4)F~SimpleCol~L(2)@s55@#4#'' & |' &|
      '<13,10>         '']|_FMHT(0000FFFFH)HB(00008000H)~Group Head~L(4)S(100)'')' &|
      '<13,10>    END' ) 
-Exp5 STRING('ModTest WINDOW(''Modifiers and Picutres''),AT(,,586,90),GRAY,FONT(''Segoe UI'',9),RESIZE' &|
-     '<13,10> LIST,AT(1,1,583,81),USE(?List1),FORMAT(''36L(2)|M*~Colored *~C(0)@s10@16L'' & |' &|
+Exp5 STRING('ModTest WINDOW(''All Modifiers and Pictures''),AT(,,586,90),GRAY,FONT(''Segoe UI'',9),RESIZE' &|
+     '<13,10> LIST,AT(1,1,583,81),USE(?AllMods_and_Pics),FORMAT(''36L(2)|FM*~Colored *~C(0)@s10@16L'' & |' &|
      '<13,10>     ''(2)I@p p@34L(2)|M~Icon~@s8@16L(2)J@p p@36L(2)|M~Tran Icon~@s9@7'' & |' &|
      '<13,10>     ''0L(2)|MT(1)~Tree T(1)~C(0)@s12@38R(2)|M~Style Z(3)~C(0)@n-9.2@Z'' & |' &|
-     '<13,10>     ''(3)40R(2)|MY~Col Style Y~C(0)@N08@48R(2)|MP~Tooltip P~C(0)@n-13'' & |' &|
-     '<13,10>     ''.2@40R(2)|M~Euro n9`2~C(0)@n-10`2@42L(2)|M~SSN  P # P~C(0)@p###'' & |' &|
+     '<13,10>     ''(3)40R(2)|MY~Col Style Y~C(0)@N08@40R(2)|MP~Tooltip P~C(0)@n-13.2@'' & |' &|
+     '<13,10>     ''26R(2)|M~Tip Q~C(0)@n5.1~%~@Q''''Tip in Format() as Q Modifier for All Rows<<0Dh,0Ah>Also picture with Tildes ~%~'''''' & |' &|
+     '<13,10>     ''40R(2)|M~Euro n9`2~C(0)@n-10`2@42L(2)|M~SSN  P # P~C(0)@p###'' & |' &|
      '<13,10>     ''-##-####p@30R(2)|M~Time~C(0)@t3@40L(2)|M~Date d4 ~@d4@48L(2)|M~'' & |' &|
-     '<13,10>     ''E12.1 Picture~L(1)@E12.1@'')' &|
+     '<13,10>     ''E12.1 Picture~L(1)@E12.1@77L(2)|MS(100)~Text Scroll S(100)~@s255@'')' &|
      '<13,10>  END' )
-Exp6 STRING(' LIST,AT(180,14,90,11),USE(TransWanted),VSCROLL,DROP(14),FROM(''ALL Types|'' & |' &|   !,FORMAT(''90L(2)'')
+Exp6 STRING(' LIST,AT(180,14,90,11),USE(TransWanted),VSCROLL,DROP(14),FROM(''ALL Types|'' & |' &|
      '<13,10>   ''#ALL|TRS|THIS|Surcharge|#SURCH|T.R.I.P.|#TRIP|Federal TR'' & |' &|
      '<13,10>   ''S|#FEDTRS|SSP ** ALL Types **|#SSP_ALL|SSP Standard |#SSPSTD|SSP Catchup |'' & |' &|
      '<13,10>   ''#SSPCAT|SSP Special |#SSPSPE|SSP Roth Standard |#ROTHSTD|SSP Roth Catchup '' & |' &|
      '<13,10>   ''|#ROTHCAT|SSP Roth Special |#ROTHSPE|Board Paid SSP|#SSPBRD'')' )
     CODE
     IF ~OMITTED(GenQueFmtExample) THEN DO GenQueRtn.
-    IF ~ExpNo THEN 
-        ExpNo=POPUP('Customer Meter|Simple Emp Type Tag|Employee Browse|Everything|Preview All Modifiers|FROM Test')
+    IF ~ExpNo THEN !    1              2                  3               4          5                     6
+        ExpNo=POPUP('Customer Meter|Simple Emp Type Tag|Employee Browse|Everything|All Modifiers and Pictures|FROM("string") Test')
     END
     EXECUTE ExpNo
     RETURN Exp1
