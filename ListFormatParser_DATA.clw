@@ -232,7 +232,7 @@ eOmit_Hide EQUATE('Hide')
 eOmit_NA_  EQUATE('N/A')
 !EndRegion -- Data for Generate Format
                     
-Window WINDOW('LIST FORMAT() - Parse to Fields and Explainer'),AT(,,505,360),GRAY,SYSTEM,MAX, |
+Window WINDOW('LIST FORMAT() 411 - Parse to Fields and Explain - FROM() Parser - Format Generator'),AT(,,505,360),GRAY,SYSTEM,MAX, |
             ICON('LFmtIcon.ico'),FONT('Segoe UI',8),RESIZE
         SHEET,AT(6,2),FULL,USE(?Sheet1),JOIN
             TAB(' L&IST Code... '),USE(?TabInput)

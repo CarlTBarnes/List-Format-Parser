@@ -78,7 +78,7 @@ No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Cl
 NoTabs              PROCEDURE(*STRING Txt)               !Change Tabs 09 to Space
 PopupUnder          PROCEDURE(LONG CtrlFEQ, STRING PopMenu),LONG
 Picture_N_Width     PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture ),SHORT,PROC 
-PreviewList         PROCEDURE(STRING pListFormat)
+PreviewFormatWindow PROCEDURE(STRING pListFormat, STRING pCaption)
 ReplaceInto         PROCEDURE(*STRING Into, STRING FindTxt,STRING ReplaceTxt,BYTE ClipInto=0),LONG,PROC !Return Count
 UppLow              PROCEDURE(*STRING InOutText, LONG How_Up1_Lo2_UpLow3=3)  !1=Upper or 2=Lower or 3=Up[1] + Low[2:end]
 DB                  PROCEDURE(STRING DbTxt) 
@@ -183,7 +183,7 @@ Tabs1Line       BOOL
         OF ?DebugTabs   ; DO TabHideSyncRtn 
         OF ?PreviewListBtn OROF ?PreviewList2Btn OROF ?PreviewList3Btn
             IF Fmt:Format THEN 
-               START(PreviewList,,Fmt:Format) 
+               START(PreviewFormatWindow,,Fmt:Format,0{'Prop_Caption_Details'}) 
             ELSE
                SELECT(?TabInput)
                Message('You must Process the LIST Code before Preview.','List Format')
@@ -352,12 +352,13 @@ FromLst   STRING(30)
 FormatLst STRING(46)
 LF LONG
     CODE
-    InBetween('USE('     ,')'        ,ListFlat,,,UseLst ,   1)  ; UppLow(UseLst[1:3])
-    InBetween('FROM('    ,')'        ,ListFlat,,,FromLst,   1)  ; UppLow(FromLst[1:4])
+    InBetween('USE('     ,')'     ,ListFlat,,,UseLst ,   1)  ; UppLow(UseLst[1:3])
+    InBetween('FROM('    ,')'     ,ListFlat,,,FromLst,   1)  ; UppLow(FromLst[1:4])
     LF=InBetween('FORMAT(''',''')',ListFlat,,,FormatLst, 1)  ; UppLow(FormatLst[1:6])
     IF LF > 45 THEN FormatLst=SUB(FormatLst,1,40) &'...'')'.
     0{PROP:Text}='LIST 411: '& lower(FORMAT(CLOCK(),@t3))   & |
-        CLIP('  '& UseLst ) & CLIP('  '& FromLst) & CLIP('  '& FormatLst) !&' Ln=' & Ln
+                          CLIP('  '& UseLst) & CLIP('  '& FromLst) & CLIP('  '& FormatLst) !&' Ln=' & Ln
+    0{'Prop_Caption_Details'} = CLIP(UseLst) & CLIP('  '& FromLst) & CLIP('  '& FormatLst)
     EXIT
 !---------------------------
 LengthsTextRtn ROUTINE  !Debug info on screen to know STRING's are big enough
@@ -1342,7 +1343,7 @@ HdrIndent  PSTRING(6)
 GenFmt.SimplePreviewBtn PROCEDURE()
     CODE
     IF ~GenSim_Format THEN GenFmt.SimpleGen().
-    START(PreviewList,,No1310(GenSim_Format))
+    START(PreviewFormatWindow,,No1310(GenSim_Format),'Simple Format Gen')
     RETURN
 GenFmt.SimpleParseBtn   PROCEDURE()
     CODE
@@ -2152,7 +2153,7 @@ Pic_Fld  STRING(32)
 GenFmt.QueuePreviewBtn PROCEDURE()
     CODE
     IF ~GenQue_Format THEN GenFmt.QueueGenFormat().
-    START(PreviewList,,No1310(GenQue_Format))
+    START(PreviewFormatWindow,,No1310(GenQue_Format),'Queue 2 Format ' & GENQUE_NAME)
     RETURN
 GenFmt.QueueParseBtn   PROCEDURE()
     CODE
@@ -2605,7 +2606,7 @@ IntegerDigits SHORT,AUTO
 
     RETURN PicWidth                
 !====================================================
-PreviewList  PROCEDURE(STRING pListFormat)
+PreviewFormatWindow PROCEDURE(STRING pListFormat, STRING pCaption)
 Fmt:Format  STRING(4000) 
 ColumnQ QUEUE,PRE(ColQ)            !Queue feeds VLB based on Format()
 ColNo     SHORT           !ColQ:ColNo     List Column
@@ -2622,8 +2623,7 @@ DataLong  LONG            !ColQ:DataLong   Data LONG for VLB
 DataText  STRING(60)      !ColQ:DataText   Data STRING for VLB
 Format    STRING(96)      !ColQ:Format     Col Format for Debug
         END !ColQ   
-                    
-!Ugly but common: FONT('Microsoft Sans Serif',8)   Better: ,FONT('Segoe UI',9)  tighter 8
+
 ViewWindow WINDOW('Preview FORMAT()'),AT(,,450,150),GRAY,SYSTEM,MAX,ICON('LFmtIcon.ico'),FONT('Segoe UI',9),RESIZE
         LIST,AT(4,58),FULL,USE(?LIST:View),NOBAR,HVSCROLL
         BUTTON('Format'),AT(3,4,34,14),USE(?FmtBtn),SKIP,TIP('Format() view using CB Window Preview Class to see PROPLIS' & |
@@ -2653,7 +2653,8 @@ ListSetup  PROCEDURE()   !Setup LIST and VLB with current Format entered
 MenuPopup  PROCEDURE()   !Menu... Button 
 PreviewCls PROCEDURE(BYTE CallType)  !Call PreviewCls. then ListSetup of change
       END
-    CODE 
+    CODE
+    IF ~pListFormat THEN Message('The Format is blank','Preview Format') ; RETURN.
     Fmt:Format=pListFormat
     ListFEQ=?LIST:View
     OPEN(ViewWindow)
@@ -2661,7 +2662,7 @@ PreviewCls PROCEDURE(BYTE CallType)  !Call PreviewCls. then ListSetup of change
     PreviewCls.Init() ; IF PreviewCls.ReflectionBtn THEN HIDE(PreviewCls.ReflectionBtn).
     0{PROP:MinWidth}=100 ; 0{PROP:MinHeight}=100 
     ListFEQ{PROP:LineHeight}=1+ListFEQ{PROP:LineHeight}
-    0{PROP:Text}=0{PROP:Text} &' Length=' & LEN(CLIP(pListFormat)) &' @ '& FORMAT(CLOCK(),@t6) 
+    0{PROP:Text}='LIST 411 Preview: '& lower(FORMAT(CLOCK(),@t3)) &'  '& CLIP(pCaption)    
     DISPLAY 
     DOO.ListSetup()
     ACCEPT
