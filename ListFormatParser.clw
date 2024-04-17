@@ -68,7 +68,8 @@ MsgLineBreak        PROCEDURE(STRING Txt),STRING
 GetExample          PROCEDURE(BYTE ExpNo, <*STRING GenQueFmtExample>),STRING
 ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos, STRING HelpBtnFEQ) 
 ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
-InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt, *LONG OutLeftPos, *LONG OutRightPos, <*STRING OutBetweenStr>),LONG,PROC !Returns -1 Not Found or Length Between may =0
+InBetween           PROCEDURE(STRING FindLeft,STRING FindRight,        STRING InLiteral, <*LONG OutLeftPos>, <*LONG OutRightPos>, <*STRING OutBetweenStr>, BOOL IncludeLeftRight=0),LONG,PROC !Returns -1 Not Found or Length Between may =0
+InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, CONST *STRING SearchTxt, <*LONG OutLeftPos>, <*LONG OutRightPos>, <*STRING OutBetweenStr>, BOOL IncludeLeftRight=0),LONG,PROC !Returns -1 Not Found or Length Between, may =Zero
 LenSizeText         PROCEDURE(STRING VariableName, *STRING StringVar),STRING  !to fill in LengthsText
 LenSizeText         PROCEDURE(STRING VariableName, *CSTRING StringVar),STRING  !to fill in LengthsText
 LenSizeText         PROCEDURE(STRING VariableName, *? StringVar, LONG StringSize),STRING  !to fill in LengthsText
@@ -2439,27 +2440,40 @@ CntChr LONG
     END
     RETURN CntChr
 !====================================================
-InBetween PROCEDURE(STRING FindLeft,STRING FindRight, STRING SearchTxt, *LONG OutLeftPos, *LONG OutRightPos, <*STRING OutBetweenStr>)!,LONG,PROC !Returns -1 Not Found or Length Between may be Zero
-OutLength LONG,AUTO
-PosLeft  LONG,AUTO
-PosRight LONG,AUTO
+InBetween PROCEDURE(STRING FindLeft,STRING FindRight, CONST *STRING SearchTxt, <*LONG OutLeftPos>, <*LONG OutRightPos>, <*STRING OutBetweenStr>, BOOL IncludeLeftRight=0)!,LONG,PROC  !Returns -1 Not Found or Length Between, may =Zero
+LengthOut LONG,AUTO   !-1 = Not Found, 0=No Data Between
+PosLeft   LONG,AUTO
+PosRight  LONG,AUTO
+NoUpper   BOOL,AUTO 
     CODE
-    OutLeftPos=0 ; OutRightPos=0 ; OutLength = -1   !-1 = Not Found 
-    PosLeft=INSTRING(UPPER(FindLeft),UPPER(SearchTxt),1,1)             !find "PRE("
+    PosRight=0 ; LengthOut = -1   !-1 = Not Found 
+    FindLeft=UPPER(FindLeft) ; FindRight=UPPER(FindRight)
+    NoUpper=CHOOSE(FindLeft  & FindRight = lower(FindLeft & FindRight))   !No UPPER() a bit Faster with Large SearchTxt
+    IF NoUpper THEN PosLeft=INSTRING(FindLeft,      SearchTxt ,1,1) |                               !e.g. find "PRE(" on Left
+    ELSE            PosLeft=INSTRING(FindLeft,UPPER(SearchTxt),1,1) .
     IF PosLeft THEN
-       PosLeft += LEN(FindLeft)                          !is ^ in "PRE(^"
-       PosRight=INSTRING(UPPER(FindRight),UPPER(SearchTxt),1,PosLeft)  !find ")"
+       IF NoUpper THEN PosRight=INSTRING(FindRight,      SearchTxt ,1,PosLeft+LEN(FindLeft)) |      !e.g. find ")" on Right
+       ELSE            PosRight=INSTRING(FindRight,UPPER(SearchTxt),1,PosLeft+LEN(FindLeft)) .
        IF PosRight THEN
-          PosRight -=1                                   !is ^ in "PRE(  ^)"
-          OutLength   = PosRight - PosLeft + 1
-          OutLeftPos  = PosLeft
-          OutRightPos = PosRight
-       END
-    END
+          IF ~IncludeLeftRight THEN 
+              PosLeft  += LEN(FindLeft)      ! Exclude so LEFT  is ^ in  "PRE(^"
+              PosRight -= 1                  !            RIGHT is ^ in  "PRE(  ^)"
+          ELSE                               ! Include so LEFT  is ^ in "^PRE("
+              PosRight += (LEN(FindRight) -1)         !   RIGHT is ^ in  "PRE(  )^"
+          END 
+          LengthOut   = PosRight - PosLeft + 1  !May =0 if Left+1=Right i.e. PRE() with nothing between
+       END 
+    END 
+    IF ~OMITTED(OutLeftPos)  THEN OutLeftPos  = PosLeft.
+    IF ~OMITTED(OutRightPos) THEN OutRightPos = PosRight.    
     IF ~OMITTED(OutBetweenStr) THEN 
-        OutBetweenStr=CHOOSE(OutLength<1,'',SearchTxt[PosLeft : PosRight])
-    END
-    RETURN OutLength
+        OutBetweenStr=CHOOSE(LengthOut<1,'',SearchTxt[PosLeft : PosRight])
+    END                     !~PosLeft OR PosLeft>PosRight
+    RETURN LengthOut    
+
+InBetween PROCEDURE(STRING FindLeft,STRING FindRight, STRING InLiteral, <*LONG OutLeftPos>, <*LONG OutRightPos>, <*STRING OutBetweenStr>, BOOL IncludeLeftRight=0)!,LONG,PROC  !Returns -1 Not Found or Length Between, may =Zero
+    CODE
+    RETURN InBetween(FindLeft,FindRight, InLiteral, OutLeftPos,OutRightPos, OutBetweenStr)
 !====================================================
 LenSizeText  PROCEDURE(STRING VariableName, *STRING StringVar)  
     CODE
