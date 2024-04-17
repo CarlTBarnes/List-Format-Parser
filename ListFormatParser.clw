@@ -145,20 +145,7 @@ Tabs1Line       BOOL
         OF ?CopyListBtn   ; SETCLIPBOARD(ListControl)                            
         OF ?GetExpPickBtn ; ListControl = GetExample(0)  
                             POST(EVENT:Accepted,?ProcessBtn) 
-        OF ?ProcessBtn  
-            ListFlat=ListControl  
-            FlattenCls.TrimText1310(ListFlat,0)   !Incase pasted format alone with extra CRLF
-            IF INSTRING('<13>',ListFlat) THEN FlattenCls.Flatten(ListFlat) .
-            DISPLAY  
-            DO ParseRtn
-            DO AddHistoryRtn
-            Fmt:InLines = Format2QCls.GetLinesFmt(Flds:InLines)
-            Fmt:Explain = Format2QCls.GetExplainLines()
-            DO ParseListParsedIntoListLinesRtn      
-            DO LengthsTextRtn
-            SELECT(CHOOSE(Fmt:Format OR ~From:From,?TabFormatLines,?TabFROM)) 
-            DISPLAY
-
+        OF ?ProcessBtn       ; DO ProcessBtn_ListControlRtn
         OF ?QuoteFixBtn      ; DO QuoteFixTypeSetterRtn
         OF ?CopyLineFmtBtn   ; SETCLIPBOARD(Fmt:InLines)
         OF ?CopyExplainBtn   ; SETCLIPBOARD(Fmt:Explain)  
@@ -287,6 +274,21 @@ Tabs1Line       BOOL
     END
     CLOSE(Window)
     RETURN
+!---------------------------
+ProcessBtn_ListControlRtn ROUTINE   !When ProcessBtn is pressed
+    ListFlat=ListControl  
+    FlattenCls.TrimText1310(ListFlat,0)   !Incase pasted format alone with extra CRLF
+    IF INSTRING('<13>',ListFlat) THEN FlattenCls.Flatten(ListFlat) .
+    DISPLAY  
+    DO ParseRtn
+    DO AddHistoryRtn
+    Fmt:InLines = Format2QCls.GetLinesFmt(Flds:InLines)
+    Fmt:Explain = Format2QCls.GetExplainLines()
+    DO ParseListParsedIntoListLinesRtn      
+    DO LengthsTextRtn
+    SELECT(CHOOSE(Fmt:Format OR ~From:From,?TabFormatLines,?TabFROM)) 
+    DISPLAY
+    EXIT
 !---------------------------
 PrepareWindowRtn ROUTINE    !Window is Open, get it all squared away
     DATA
