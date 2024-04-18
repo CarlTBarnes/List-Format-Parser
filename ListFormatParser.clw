@@ -343,7 +343,9 @@ TabHideSyncRtn ROUTINE
     ?TabFormatQ{PROP:Hide}=1-DebugTabs
     ?TabFieldsQ{PROP:Hide}=1-DebugTabs
     ?TabExplainQ{PROP:Hide}=1-DebugTabs
-    IF DebugTabs AND 0{PROP:Width}<620 THEN 0{PROP:Width}=620.
+    ?LIST:ModExtraQDbg{PROP:Hide}=1-DebugTabs
+    ?LIST:ModifierQDbg{PROP:Hide}=1-DebugTabs
+    IF DebugTabs AND 0{PROP:Width}<700 THEN 0{PROP:Width}=700.
 !---------------------------
 WindowCaptionRtn ROUTINE
     DATA
@@ -1213,6 +1215,7 @@ HelpCls.Init   PROCEDURE()
 HelpCls.Add1Q   PROCEDURE(STRING _Char, STRING _Type, STRING _Prop, STRING _Name, STRING _Desc)  
 P4D     STRING(128),AUTO
 Cln     LONG,AUTO
+LookUp2 STRING(2),AUTO
     CODE
     ModQ:Char = _Char
     ModQ:Name = _Name
@@ -1232,7 +1235,33 @@ Cln     LONG,AUTO
     ModQ:PropFull = P4D 
 !dbg    IF ~_DESC THEN  ModQ:Name='####### no desc ###' & _Name.
     ModQ:Desc =  CLIP(_Desc) & '<13,10>'& P4D
+    
+    CASE ModQ:Char
+    OF '()' 
+    OF '[]()'   ; LookUp2='](' 
+    OF ']~()'   ; LookUp2='~(' 
+    ELSE        ; LookUp2 = SUB(ModQ:Char,1,2)
+    END
+    IF    NUMERIC(LookUp2[1])                       THEN LookUp2   =''          !Numbers 0-9 
+    ELSIF INLIST(LookUp2[2],'(','<39>','@','#','[') THEN LookUp2[2]=''          !Easy fix S( E(     
+    ELSIF INLIST(LookUp2[1],'~','~')                THEN LookUp2=LookUp2[2]     !~L~R~C~D -> LRCD        
+    ELSIF INLIST(LookUp2,'HT','HB')                 THEN    !HT HB Keep 2 bytes
+    ELSIF LEN(CLIP(LookUp2))=1                      THEN    !Len=1 Keep 1 bytes 
+    ELSE                                                    !Len=2 Keep 2 bytes
+            !Keep 2 bytes
+    END 
+    ModQ:Lookup = LookUp2
     ADD(ModifierQ)
+    RETURN
+!------------------------------------------------
+HelpCls.Add1ModExQ PROCEDURE(STRING _Char, BYTE _ExtraCnt, STRING _Desc)
+    CODE
+    CLEAR(ModExtraQ)
+    ModExQ:Order    = RECORDS(ModExtraQ) +1
+    ModExQ:Char     = _Char
+    ModExQ:ExtraCnt = _ExtraCnt
+    ModExQ:Desc     = _Desc
+    ADD(ModExtraQ,ModExQ:Order)
     RETURN
 !------------------------------------------------
 HelpCls.Set1QDesc   PROCEDURE(STRING _Char, STRING _Desc) 
@@ -1244,6 +1273,10 @@ HelpCls.Set1QDesc   PROCEDURE(STRING _Char, STRING _Desc)
     RETURN 
 !------------------------------------------------
 HelpCls.Init2   PROCEDURE()
+ListFEQ LONG,AUTO
+X       LONG,AUTO
+QTip    CSTRING(500),AUTO
+QProp   STRING(128),AUTO
     CODE 
     ?List:ModifierQ{PROP:LineHeight} = 1 + ?List:ModifierQ{PROP:LineHeight}
     ?List:ModifierQ{PROPSTYLE:FontName,1} = 'Consolas'
@@ -1253,6 +1286,13 @@ HelpCls.Init2   PROCEDURE()
     ?List:ModifierQ{PROPSTYLE:FontName,2} = 'Consolas'
     ?List:ModifierQ{PROPSTYLE:FontSize,2} = 1 + ?List:ModifierQ{PROP:FontSize} 
     ?List:ModifierQ{PROPSTYLE:FontStyle,2} = FONT:Regular
+
+    self.Add1ModExQ('*', 4, 'Colors - 4 x LONG - PROPLIST:Color')
+    self.Add1ModExQ('I', 1, 'Icon Index in {{Prop:IconList,#} - LONG - PROPLIST:Icon')
+    self.Add1ModExQ('J', 1, 'Icon Index in {{Prop:IconList,#} - LONG - PROPLIST:IconTrn')
+    self.Add1ModExQ('T', 1, 'Tree Level - LONG - PROPLIST:Tree')
+    self.Add1ModExQ('Y', 1, 'Style Number for Cell - LONG - PROPLIST:CellStyle')
+    self.Add1ModExQ('P', 1, 'Tool Tip for Cell - STRING - PROPLIST:Tip')
 
     HelpModOrder = 'Six modifiers require separate fields in the QUEUE to ' &|
             '<13,10>hold formatting data, the following is the order in ' &|

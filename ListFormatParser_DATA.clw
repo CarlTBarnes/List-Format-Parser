@@ -96,6 +96,7 @@ HelpCls CLASS
 Init        PROCEDURE()
 Init2       PROCEDURE()
 Add1Q       PROCEDURE(STRING _Char, STRING _Type, STRING _Prop, STRING _Name, STRING _Desc)
+Add1ModExQ  PROCEDURE(STRING _Char, BYTE _ExtraCnt, STRING _Desc)  !Add 1 Modifier Extra to  ModExtraQ
 Set1QDesc   PROCEDURE(STRING _Char, STRING _Desc)
         END
 HelpSyntax      STRING(200)
@@ -110,6 +111,13 @@ Name            STRING(60)      !ModQ:Name
 PropFull        STRING(60)      !ModQ:PropFull  !with PROPLIST:
 Desc            STRING(1024)    !ModQ:Desc
 Sort            STRING(7)       !ModQ:Sort = lower(Char) + Rec# so Unique Key
+Lookup          STRING(2)       !ModQ:Lookup - 1 for most, or 2 for HB HT - For GET on Mod Tips
+            END
+ModExtraQ   QUEUE,PRE(ModExQ)   !LIST Modifiers that add Extra Fields to the Queue
+Order           BYTE            !ModExQ:Order       123456
+Char            STRING(1)       !ModExQ:Char        *IJTYP
+ExtraCnt        BYTE            !ModExQ:ExtraCnt    4 or 1
+Desc            STRING(60)      !ModExQ:Desc
             END
 
 PrefixFieldInExplain  SHORT(1)
@@ -334,7 +342,16 @@ Window WINDOW('LIST FORMAT() 411 - Parse to Fields and Explain - FROM() Parser -
                         '49L(3)~Modifier Description (click to sort)~L(2)@s60@'),ALRT(CtrlC), |
                          ALRT(CtrlShiftC)
                 TEXT,AT(328,118,171,150),USE(ModQ:Desc),VSCROLL,FONT('Consolas',9),READONLY
-                TEXT,AT(328,274),FULL,USE(HelpModOrder),SKIP,HVSCROLL,FONT('Consolas',9),READONLY
+                TEXT,AT(328,274,280),FULL,USE(HelpModOrder),SKIP,HVSCROLL,FONT('Consolas',9),READONLY
+                LIST,AT(616,118,,203),FULL,USE(?LIST:ModifierQDbg),HIDE,VSCROLL,TIP('Debug ModifierQ' & |
+                        ' and LookUp column used to add Help to ColumnzQ Modifier Tips'),FROM(ModifierQ), |
+                        FORMAT('30L(2)|FM~Lookup~@s2@#8#19L(2)|FM~Char ~@s4@#1#70L(2)|FM~Prop STRING' & |
+                        '(40)~@s40@25L(2)|M~Type ~@s5@134L(2)|M~Name STRING(60) ~@s60@90L(2)|M~PropF' & |
+                        'ull STRING(60) ~@s60@147L(2)|M~Desc STRING(54) ~@s54@30L(2)|M~Sort 7~@s7@')
+                LIST,AT(616,330,400,70),USE(?LIST:ModExtraQDbg),HIDE,VSCROLL,FONT('Consolas',10), |
+                        TIP('Debug ModExtraQ used for ColumnzQ Modifier Extra'),FROM(ModExtraQ), |
+                        FORMAT('29C(0)|M~Order~@s1@24C(0)|M~Char~@s1@28C(0)|M~XtraQ~@n1@200L(2)|M~De' & |
+                        'sc~L(2)@s60@')
             END
             TAB('&Queue 2 Format'),USE(?TabGenQueue),TIP('Generate a Format from a Queue')
                 PROMPT('QUEUE Declaration<13,10>or FILE(s)'),AT(10,206,66,20),USE(?GenQue_TextQ:Prompt)
