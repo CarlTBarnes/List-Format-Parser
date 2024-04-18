@@ -316,7 +316,10 @@ TTip CSTRING(500)
     ListMakeOver(?LIST:HistoryQ,2)
     ListMakeOver(?LIST:ModifierQ,0)     ; ?List:ModifierQ{PROPLIST:HasSortColumn}=1      
     ListMakeOver(?LIST:GQFieldsQ,0) 
-    ListMakeOver(?LIST:FormatQ,1) ; ListMakeOver(?LIST:FieldsQ,1) ; ListMakeOver(?LIST:ExplainQ,1) 
+    ListMakeOver(?LIST:FormatQ,2) ; ListMakeOver(?LIST:FieldsQ,1) ; ListMakeOver(?LIST:ExplainQ,1) 
+    ListMakeOver(?LIST:ColumnzQ,1)
+                 ?LIST:ColumnzQ{PROPSTYLE:FontName,6}='Consolas'  !Format Column
+                 ?LIST:ColumnzQ{PROPSTYLE:FontSize,6}=9
 
     TTip='Run Another Instance<13,10,13,10>'& Command('0') 
     ?RunAgainBtn{PROP:Tip}=TTip ; ?RunAgainFmtBtn{PROP:Tip}=TTip ; ?RunAgainFromBtn{PROP:Tip}=TTip ; ?RunAgainGFQBtn{PROP:Tip}=TTip
@@ -333,6 +336,7 @@ TTip CSTRING(500)
     OMIT('!**END WndPrv Omit**', OmitWndPrv)   
         WndPrvCls.Init(1)     !WndPreview secret button hover upper left corner and pops up
         WndPrvCls.InitList(?LIST:HistoryQ ,HistoryQ ,'HistoryQ')    !Not required in 11.13505, but below does show Queue Name in WndPreview 
+        WndPrvCls.InitList(?LIST:ColumnzQ ,ColumnzQ ,'ColumnzQ')
         WndPrvCls.InitList(?LIST:FormatQ  ,FormatQ  ,'FormatQ')
     !**END WndPrv Omit**
     EXIT

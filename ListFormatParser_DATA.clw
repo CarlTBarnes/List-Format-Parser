@@ -239,6 +239,32 @@ eOmit_Omit EQUATE('Omit')  !Case sensitive for GQFldQ:OmitHow
 eOmit_Hide EQUATE('Hide')
 eOmit_NA_  EQUATE('N/A')
 !EndRegion -- Data for Generate Format
+
+!Region -- Columns View on tab using ColumnzQ and Class new 04/05/24
+ColumnzQ QUEUE,PRE(ColzQ)
+ColNo       STRING(6)   !1  ColzQ:ColNo      <--  String ## or Grp## a STRING see ColX below a Numeric SHORT
+Level       LONG        !-     ColzQ:Level      Tree 1=Column or Group, 2=Column in Group
+FieldNo     SHORT       !2  ColzQ:FieldNo       PROPLIST:FieldNo  *only* when <>ColNo so #Fld#
+GroupNo     SHORT       !3  ColzQ:GroupNo       PL:GroupNo
+Variable    STRING(96)  !4  ColzQ:Variable              #FIELD(var) Actually Queue
+Header      STRING(32)  !5  ColzQ:Header        PL:Header
+Picture     STRING(32)  !6  ColzQ:Picture       PL:Picture
+Width       STRING(8)   !7  ColzQ:Width         PL:width
+Align       STRING(5)   !8  ColzQ:Align         PL:Left (PL:LeftOffset) etc  L(2)
+HeadAlign   STRING(5)   !9  ColzQ:HeadAlign     PL:HeaderLeft
+Mods        STRING(16)  !10 ColzQ:Mods          Modifiers e.g. |FM_*
+Mods_Tip    STRING(516) !--    ColzQ:Mods_Tip   Lookup in ModifierQ of help text
+ModXFields  BYTE        !12 ColzQ:ModXFields    Extra Fields Required for Modifier 
+ModXF_Tip   STRING(516) !--    ColzQ:ModXF_Tip  Lookup in ModExtraQ of Extra help
+QFieldX     SHORT       !13 ColzQ:QFieldX       PROPLIST:FieldNo  *Always* even if =ColNo  Cannot do Here? 
+ColX        SHORT       !14 ColzQ:ColX          <-- ColNo as a Numeric SHORT vs above ColNo a STRING
+InGroup     SHORT       !15 ColzQ:InGroup       Group # the Column is in, =Zero if it is a group
+FmtSource   STRING(256) !16 ColzQ:FmtSource     PL:Format for Column = FmtQ:FieldSpec
+Level2      LONG        !-- ColzQ:Level2     <-- Tree Level for Format Column duplicates Level above
+FmtString   STRING(256) !-- ColzQ:FmtString  <-- Tool TIP for Format =UnQuoted(FmtSource)
+FmtTokn     STRING(256) !   ColzQ:FmtTokn   Format just the Tokens for parsing so ignore () inside ~Heading~ 
+      END    
+!EndRegion -- Columns View
                     
 Window WINDOW('LIST FORMAT() 411 - Parse to Fields and Explain - FROM() Parser - Format Generator'),AT(,,505,360),GRAY,SYSTEM,MAX, |
             ICON('LFmtIcon.ico'),FONT('Segoe UI',8),RESIZE
@@ -316,6 +342,19 @@ Window WINDOW('LIST FORMAT() 411 - Parse to Fields and Explain - FROM() Parser -
                 BUTTON('Align "'),AT(4,210,31,18),USE(?FromAlignQuoteBtn),SKIP,TIP('Undo Align #Values by Align Left Quotes')
                 BUTTON('Split #'),AT(4,245,31,18),USE(?FromSplitValueBtn),SKIP,TIP('#Values Split into separate String and Aligned')
                 BUTTON('&ReRun'),AT(4,290,31,18),USE(?RunAgainFromBtn),SKIP,TIP('Run Another Instance')
+            END
+            TAB('Columns'),USE(?TabColumns),TIP('List of Columns in the Format()')
+                LIST,AT(8,49),FULL,USE(?LIST:ColumnzQ),VSCROLL,FONT(,9),HLP('x_noQtip'),FROM(ColumnzQ), |
+                        FORMAT('40L(2)|FMT(B)~Column~C(0)@s6@18R(4)|FM~Fld~C(0)@n4b@15R(4)|FM~Gr' & |
+                        '<0Dh,0Ah>No~C(0)@n3b@Q''PL_GroupNo''100L(2)|FM~#Field(Variable)~C(0)@s96@80' & |
+                        'L(2)|FM~Header~C(0)@s32@Q''PL_Header''?37L(2)|FM~Picture~L(1)@s32@Z(6)Q''PL' & |
+                        '_Picture''20L(2)|FM~Wid<0Dh,0Ah>th~C(0)@s8@Q''PL_Width''22L(2)|FM~Data<0Dh>' & |
+                        '<0Ah>Algn~C(0)@s5@Q''PL_Left''22L(2)|FM~Hdr<0Dh,0Ah>Algn~C(0)@s5@Q''PL_Head' & |
+                        'erLeft''28L(3)|FMP~Mods~C(0)@s16@Z(6)Q''Modifiers''14R(4)|FMP~Md<0Dh,0Ah>#~' & |
+                        'C(0)@n1b@Q''Modifier Extra Queue Fields''19R(4)|M~Que<0Dh,0Ah>Fld~L(1)@n3b@' & |
+                        'Q''PL_FieldNo ''15R(4)|M~Co<0Dh,0Ah>#~C(0)@n-4@Q''Column Number''15R(4)|M~G' & |
+                        'r<0Dh,0Ah>#~C(0)@n-4b@Q''Column Group''80L(2)|FMPT(B)~Format String~@s255@Z' & |
+                        '(6)Q''PL_Format''')            
             END
             TAB(' LIST Lines '),USE(?TabListLines),TIP('All LIST attributes parsed as one per line')
                 BUTTON('Copy LIST'),AT(61,22,55,22),USE(?CopyListLineFmtBtn),SKIP,ICON(ICON:Copy), |
