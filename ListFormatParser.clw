@@ -1109,6 +1109,343 @@ Format2QCls.AssignSLM       PROCEDURE(*STRING ToStr, STRING FromStr, *USHORT Out
     IF OutLen > InOutMaxLen THEN InOutMaxLen = OutLen .
     RETURN
 !================================================    
+!Region -- ColumnzCls Class
+ColumnzCls.ColumnzQ_AddFromExplainAndFormat  PROCEDURE(*SHORT Colz_LastColX, *SHORT Colz_LastFldX)  !Fill in ColumnzQ fields from Format
+    CODE
+    DB('Add_ColumnzQ_FromExplainAndFormat_Rtn TOP #{30} '& Pointer(FormatQ) &' FmtSpec=' & FmtQ:FieldSpec )
+    IF ~FmtQ:GrpNo THEN Colz_LastColX = FmtQ:FldNo.     !So Groups get Last ColNo
+    CLEAR(ColumnzQ)                                   !'Grp '
+    ColzQ:ColNo     = CHOOSE(~FmtQ:GrpNo,FmtQ:FldNo&'','Gr '& Colz_LastColX)  !was ExpQ:ColTxt  ! STRING(5)   !1  ColzQ:ColNo  
+    ColzQ:Level     = CHOOSE(FmtQ:InGrpNo=0,1,2)    ! LONG        !-  ColzQ:Level
+    ColzQ:FieldNo   = FmtQ:FldNo                    ! USHORT      !2  ColzQ:FieldNo  
+    ColzQ:GroupNo   = FmtQ:GrpNo                    ! USHORT      !3  ColzQ:GroupNo 
+    ColzQ:Variable  = ExpQ:FieTxt                   ! STRING(64)  
+
+!    ColzQ:Header    = ''      ! STRING(32)  !4  ColzQ:Header   Parsed from Format
+!    ColzQ:Picture   = ''      ! STRING(16)  !5  ColzQ:Picture  
+!    ColzQ:Width     = ''      ! STRING(8)   !6  ColzQ:Width    
+!    ColzQ:Align     = ''      ! STRING(5)   !7  ColzQ:Align    
+!    ColzQ:HeadAlign = ''      ! STRING(5)   !8  ColzQ:HeadAlign
+!    ColzQ:Mods      = ''      ! STRING(16)  !9  ColzQ:Mods
+!    ColzQ:ModXFields=0        ! BYTE done below  
+    ColzQ:FmtSource = FmtQ:FieldSpec
+    ColzQ:FmtString = UNQUOTE(FmtQ:FieldSpec)
+    ColzQ:FmtTokn   = FmtQ:TokenSpec
+    ColzQ:Level2    = ColzQ:Level           ! LONG        !-  ColzQ:Level2 
+    ColzQ:ColX      = Colz_LastColX         ! SHORT       !12 ColzQ:ColX
+    ColzQ:InGroup   = FmtQ:InGrpNo          ! SHORT
+    IF ~FmtQ:GrpNo THEN
+        Colz_LastFldX += 1
+        ColzQ:qFieldX = Colz_LastFldX    ! USHORT      !   ColzQ:FieldX    Queue Field No
+    END
+    ColumnzCls.ColumnzQ_From_Format(ColzQ:FmtSource, ColzQ:FmtTokn)
+
+    IF FmtQ:GrpNo < 0 THEN                  !End ] of Group?
+       DO EndofGroupApplyToBeginGroupRtn    ! update [ Begin
+    ELSE     
+       ADD(ColumnzQ)
+       Colz_LastColX += 1
+       Colz_LastFldX += ColzQ:ModXFields
+    END
+    RETURN 
+EndofGroupApplyToBeginGroupRtn ROUTINE
+    DATA
+EndColzGroup    GROUP(ColumnzQ),Pre(EndColz)
+                END 
+    CODE
+    EndColzGroup = ColumnzQ         !Save the End stuff where all the setting exist
+    ColzQ:GroupNo = -1 * FmtQ:GrpNo
+    GET(ColumnzQ,ColzQ:GroupNo)
+    IF ERRORCODE() THEN 
+         If DebugTabs OR DebugMsgs THEN Message('For End "]" Group did not find Begin |FmtQ:GrpNo='& FmtQ:GrpNo &'|ColzQ:FmtSource='& ColzQ:FmtSource,'EndofGroupApplyToBeginGroupRtn').
+         EXIT
+    END 
+    ColzQ:Variable  = '[List Group]'
+    ColzQ:Header    = EndColz:Header     ![Open Grp='' ... Close] can have ~Header~
+    ColzQ:Picture   = EndColz:Picture    ![ ] Never in Group
+    ColzQ:Width     = EndColz:Width      !  ] only close
+    ColzQ:Align     = EndColz:Align      !  ] only
+    ColzQ:HeadAlign = EndColz:HeadAlign  !  ] only
+    ColzQ:Mods      = CLIP(ColzQ:Mods)    &''& EndColz:Mods          !Should be [
+    ColzQ:FmtSource = CLIP(ColzQ:FmtSource)  &''& EndColz:FmtSource  !Typical [ ] Mods
+    ColzQ:FmtString = CLIP(UNQUOTE(ColzQ:FmtSource))  &''& UNQUOTE(EndColz:FmtSource)   !Typical [ ] Mods
+    ColzQ:FmtTokn   = CLIP(ColzQ:FmtTokn) &''& EndColz:FmtTokn
+    PUT(ColumnzQ) 
+    EXIT
+!------------------------------    
+ColumnzCls.ColumnzQ_From_Format  PROCEDURE(STRING FmtSpec, STRING FmtTokn)  !Fill in ColumnzQ from Format
+EndParenCW  LONG
+EndTildePos LONG            !End of ~header~ 
+HeadSpec STRING(64),AUTO    !Header Extras after End Tilder~ should be L(#) 
+HeadTokn STRING(64),AUTO
+JunkOut  STRING(64),AUTO
+    CODE
+    IF ~CharNUMERIC(FmtSpec[1],1) THEN     !Must be [group]
+        IF FmtSpec[1]=']' THEN 
+           DO EndGroupRtn
+        END
+        RETURN
+    END
+    !Input  FmtSpec: 126L(2)|*~Employee Name~@s30@?
+    !Input  FmtTokn: 122L( )|*~             ~@   @?    Just the tokens that matter
+    EndParenCW   =SELF.FmtParse_WidthAlign(FmtSpec, FmtTokn, ColzQ:Width, ColzQ:Align)
+    DO HeaderRtn
+    ColzQ:Picture=SELF.FmtParse_Between(FmtSpec, FmtTokn,'@','@') 
+    IF ColzQ:Picture THEN ColzQ:Picture='@' & ColzQ:Picture.
+    SELF.FmtParse_GetModifiers(FmtSpec,ColzQ:Mods,ColzQ:ModXFields)
+    RETURN
+
+HeaderRtn ROUTINE
+    ColzQ:Header =SELF.FmtParse_Between(FmtSpec, FmtTokn,'~','~',,EndTildePos)
+    IF EndTildePos AND SUB(FmtTokn,EndTildePos+1,1)<>'@' THEN     !Probably Header Align ~header~L(##)@Picture
+       HeadSpec='1' & SUB(FmtSpec,EndTildePos+1,99)     !1 is fake width needed by function
+       HeadTokn='1' & SUB(FmtTokn,EndTildePos+1,99)
+       IF INSTRING(HeadSpec[2],'LRCD',1) THEN        !Looks like L(###)
+          SELF.FmtParse_WidthAlign(HeadSpec, HeadTokn, JunkOut, ColzQ:HeadAlign)
+       END       
+    END
+    EXIT 
+                        !E.g. ](55)|_~TRS Data~C(#)
+EndGroupRtn ROUTINE     !Special for End ] that may have  ~GroupHead~Justification(IndentHead)
+    DB('EndGroupRtn FmtSpec=' & FmtSpec )
+    IF FmtSpec[2]='(' THEN                  !Must have ](Width)
+       ColzQ:Width =SELF.FmtParse_Between(FmtSpec, FmtTokn,'(',')',,EndParenCW)
+       DB('Find Width in EndParenCW=' & EndParenCW &' W='& ColzQ:Width )
+    END 
+    DO HeaderRtn
+    DB('EndGroupRtn DO HeaderRtn EndTildePos=' & EndTildePos &' ColzQ:Header='& ColzQ:Header&' ColzQ:HeadAlign='& ColzQ:HeadAlign )
+    SELF.FmtParse_GetModifiers(FmtSpec,ColzQ:Mods,ColzQ:ModXFields)
+    EXIT
+!-----------------------------
+ColumnzCls.FmtParse_WidthAlign PROCEDURE(CONST *STRING FmtSpec, CONST *STRING FmtTokn, <*STRING OutWidth>, <*STRING OutLRCD>)!,LONG,PROC !Return End Paren of ###L(##)
+Numbers_Cnt  LONG
+AlignOff_Len LONG
+    CODE              !Should be ####L(###)     Column Width (offset)  if (0) is omitted sometimes
+    Numbers_Cnt=SELF.FmtParse_NumberCnt(FmtSpec)
+    IF Numbers_Cnt THEN 
+       AlignOff_Len = Self.FmtParse_AlignOffset_Len(FmtTokn, Numbers_Cnt+1)  !Returns Length of L(##)
+    END
+    IF ~OMITTED(OutWidth) THEN OutWidth=SUB(FmtSpec,1,Numbers_Cnt).
+    IF ~OMITTED(OutLRCD)  THEN OutLRCD =SUB(FmtSpec,  Numbers_Cnt+1, AlignOff_Len).
+    RETURN Numbers_Cnt + AlignOff_Len 
+!-----------------------------
+ColumnzCls.FmtParse_AlignOffset_Len PROCEDURE(CONST *STRING FmtTokn, LONG AlignPos, BOOL IsGroup=0)!,LONG !Returns Length of L(##) or ](##)
+LenOfAO  LONG
+EndParen LONG,AUTO
+    CODE              !Should be ####L(###)     Column Width (offset)  if (0) is omitted sometimes
+    IF (~IsGroup AND INSTRING(SUB(FmtTokn,AlignPos,1),'LCRD') ) |      !Normal LCRD before (#)
+    OR ( IsGroup AND SUB(FmtTokn,AlignPos,1)=']'              ) THEN   !Group can have ](Width) similar format to AO
+       LenOfAO = 1 
+       IF SUB(FmtTokn,AlignPos+1,1)='(' THEN                           !It has   '('
+          EndParen=INSTRING(')',FmtTokn,1,AlignPos)                    !Is there ')' so (offset)
+          IF EndParen THEN                                             !Yes its '()'
+             LenOfAO = EndParen - AlignPos + 1
+          END 
+       END
+    END
+    RETURN LenOfAO
+!----------------------------
+ColumnzCls.FmtParse_NumberCnt PROCEDURE(CONST *STRING FmtSpec, <*STRING OutNumberString>)!,LONG
+N LONG,AUTO
+    CODE
+    LOOP N=1 TO LEN(FmtSpec)
+        IF ~CharNUMERIC(FmtSpec[N],N) THEN BREAK.
+    END                         !FYI Clarion ends Loop at +1
+    IF N THEN N -= 1.           !incase Len is zero then N=1 
+    IF N AND ~OMITTED(OutNumberString) THEN 
+       OutNumberString = FmtSpec[1: N]
+    END
+    RETURN N
+!--------------------------
+ColumnzCls.FmtParse_Between PROCEDURE(CONST *STRING FmtSpec, CONST *STRING FmtTokn,STRING LeftToken, STRING RightToken, <*LONG OutLeftPos>, <*LONG OutRightPos>)!,STRING,PROC
+L LONG,AUTO
+R LONG,AUTO
+    CODE
+    L=INSTRING(LeftToken,FmtTokn,1,1)
+    IF L THEN R=INSTRING(RightToken,FmtTokn,1,L+1)  ELSE R=0 . 
+    IF L+1 > R-1 THEN L=0 ; R=0.    !Was @@ 2 tokens then no return
+    IF ~OMITTED(OutLeftPos)  THEN OutLeftPos = L.
+    IF ~OMITTED(OutRightPos) THEN OutRightPos= R.
+    IF L AND R AND R-1 >= L+1  THEN
+       RETURN FmtSpec[L+1 : R-1]
+    END
+    RETURN ''
+!-------------------------------
+ColumnzCls.FmtParse_GetModifiers  PROCEDURE(STRING Fmt,*STRING outModz, *BYTE XFieldCnt)  !From WndPreview
+!Column: 33R(2)|*~Rate~C(0)@n7.3b@ 
+!Group]: (94)|FM~TRS Information~L(0)  Group End Starts with (width) ends with Align LCRD (Offset)
+Modz    STRING(SIZE(Fmt)+9)
+MCnt    USHORT
+LenFmt  USHORT,AUTO
+FX      SHORT,AUTO
+MX      USHORT,AUTO
+InThing   BYTE
+ThingEnd  STRING(1),AUTO 
+    CODE 
+    Fmt=UPPER(UNQUOTE(Fmt))    !Fix Q''tip'' to be Q'Tip' ... could use Fmt Tokens, but this is more usable
+    LenFmt=Len(Clip(Fmt))
+    FX=STRPOS(Fmt,'[^0-9()LRCD]',0) - 1    !Bypass  ####(LRCD)
+    IF FX < 0 OR FX > LenFmt THEN RETURN.
+    LOOP WHILE FX < LenFmt AND MCnt < SIZE(Modz)
+        FX += 1
+        IF InThing THEN 
+           IF Fmt[FX]<>ThingEnd THEN CYCLE.
+           InThing=0 ; CYCLE
+        END 
+!FormatDelim1    STRING('''~(@#')       !~Heading~  (Offset#)  @picture@  #FieldNo#  quotes? for tool tip
+!FormatDelim2    STRING('''~)@#')       !Note Q '' must be first to spot double
+        CASE Fmt[FX]
+        OF '~' OROF '''' OROF '@' ; InThing=1 ; ThingEnd=Fmt[FX] 
+        OF '('                    ; InThing=1 ; ThingEnd=')'     
+        OF '#'                    ; InThing=2 ; ThingEnd=Fmt[FX]  !Show the #
+        OF 'L' OROF 'R' OROF 'C' OROF 'D' ; CYCLE  !Align after ~Header~ 
+        OF ',' OROF ')' OROF '[' OROF ']' ; CYCLE  !Never posible
+        OF '0' TO '9' ; CYCLE
+        OF '<0>' TO '<32>' ; CYCLE  !No spaces, tabs, 13,10 or Low Ascii 
+!        OF 'H'
+!            IF INLIST(SUB(Fmt,FX,2),'HT','HB') THEN     !HT is Header Text color will
+        END
+        IF InThing=1 THEN CYCLE.
+        CASE UPPER(Fmt[FX])
+        OF '*' ; XFieldCnt += 4    !Color 4*LONG
+        OF   'I' !Icon
+        OROF 'J' !IconTrn
+        OROF 'T' !Tree Level
+        OROF 'Y' !Style Number
+        OROF 'P' !Tool Tip
+            XFieldCnt += 1
+        END
+        IF MCnt >= SIZE(Modz) THEN BREAK.
+        MCnt += 1
+        Modz[MCnt] = Fmt[FX]
+    END
+    ColzQ:Mods_Tip  = ''
+    ColzQ:ModXF_Tip = ''
+    LOOP MX=1 TO MCnt
+         CASE SUB(Modz,MX,2)
+         OF 'HT' OROF 'HB'
+            ModQ:Lookup = SUB(Modz,MX,2) 
+            Modz[MX+1]=LOWER(Modz[MX+1])     !Make it Ht Hb so "T" Not confused for Tree
+         ELSE
+            ModQ:Lookup = SUB(Modz,MX,1) 
+         END
+         GET(ModifierQ,ModQ:Lookup) ; IF ERRORCODE() THEN CYCLE.
+         ColzQ:Mods_Tip=CLIP(ColzQ:Mods_Tip) & | 
+                     CLIP(ModQ:Lookup) &' - '& CLIP(ModQ:Name) &' - '& CLIP(ModQ:PropFull) & |
+                     '<13,10>'
+    END
+    XFieldCnt = 0
+    LOOP FX=1 TO RECORDS(ModExtraQ)
+        GET(ModExtraQ,FX)
+        IF ~INSTRING(ModExQ:Char[1],Modz,1) THEN CYCLE.
+        XFieldCnt += ModExQ:ExtraCnt
+        ColzQ:ModXF_Tip=CLIP(ColzQ:ModXF_Tip) & | 
+                     CLIP(ModExQ:Char) &' - '& CLIP(ModExQ:Desc) &'<13,10>'  
+    END
+    outModz = Modz 
+    RETURN 
+!----------------------------------------------- 
+ColumnzCls.List:ColzQ_TakeEvent PROCEDURE() !Handle Event for LIST like Right click
+    CODE
+    GET(ColumnzQ,CHOICE(?LIST:ColumnzQ))
+    IF ERRORCODE() THEN RETURN.
+    CASE EVENT()
+    OF EVENT:NewSelection
+       CASE KEYCODE()
+       OF MouseRight ; DO PopupColzRtn
+       OF MouseLeft2 ; DO Click2ColzRtn
+       END       
+    END
+    RETURN
+PopupColzRtn ROUTINE
+    SETKEYCODE(0)
+    CASE POPUP('Copy #Field Variable|-|Copy Format() Source|Copy Format() Tokens|Copy Format() String|Copy Heading|-|Copy All Columns' & |
+                '|-||Part Split TEXT Format() && Tokens|Part Split CODE  ')
+    OF 1 ; SETCLIPBOARD(ColzQ:Variable)
+    OF 2 ; SETCLIPBOARD(ColzQ:FmtSource)
+    OF 3 ; SETCLIPBOARD(ColzQ:FmtTokn) 
+    OF 4 ; SETCLIPBOARD(ColzQ:FmtString)
+    OF 5 ; SETCLIPBOARD(ColzQ:Header)
+    OF 6 ; Self.ColumnzQ_ToClipboard()
+
+    OF 7 ; SETCLIPBOARD(       CLIP(ColzQ:FmtSource) &'<13,10>'&  CLIP(ColzQ:FmtTokn) )
+    OF 8 ; SETCLIPBOARD('''' & CLIP(ColzQ:FmtSource) &'<<13,10>'& CLIP(ColzQ:FmtTokn) &'''')
+    END
+    EXIT
+Click2ColzRtn ROUTINE
+    DATA
+Mods_Tip STRING(500)
+ModXF_Tip STRING(500)
+    CODE
+    IF ColzQ:Mods_Tip THEN 
+       Mods_Tip='<13,10>' & ColzQ:Mods_Tip
+       ReplaceInto(Mods_Tip, '<13,10>','<13,10,9>')
+       Mods_Tip='<13,10>Modifiers Help:' & Mods_Tip
+    END 
+    IF ColzQ:ModXF_Tip THEN 
+       ModXF_Tip='<13,10>' & ColzQ:ModXF_Tip
+       ReplaceInto(ModXF_Tip, '<13,10>','<13,10,9>')
+       ModXF_Tip='<13,10>Modifier Xtra Queue Fields: ('& ColzQ:ModXFields &')'& ModXF_Tip
+    END
+    
+    Message('List Column Information from the FORMAT()<13,10>={50}' & |  !Data for ColumnzQ '& ColzQ:ColNo & |
+       MessagePipeFix(  |
+          '<13,10>Column Number:  <9>' & CLIP(ColzQ:ColNo     ) & |     !1  ColzQ:ColNo           !STRING(6)  
+          '<13,10>Field Number::<9>' & CLIP(ColzQ:FieldNo   ) & |     !2  ColzQ:FieldNo         !SHORT      
+          '<13,10>Group Number::<9>' & CLIP(ColzQ:GroupNo   ) & |     !3  ColzQ:GroupNo         !SHORT      
+          '<13,10>Variable:<9><9>' & CLIP(ColzQ:Variable  ) & |     !4  ColzQ:Variable        !STRING(96) 
+   '<13,10><13,10>Header:  <9><9>' & CLIP(ColzQ:Header    ) & |     !4  ColzQ:Header          !STRING(32) 
+          '<13,10>Head Align: <9>' & CLIP(ColzQ:HeadAlign ) & |     !8  ColzQ:HeadAlign       !STRING(5)  
+   '<13,10><13,10>Picture: <9><9>' & CLIP(ColzQ:Picture   ) & |     !5  ColzQ:Picture         !STRING(32) 
+          '<13,10>Data Width: <9>' & CLIP(ColzQ:Width     ) & |     !6  ColzQ:Width           !STRING(8)  
+          '<13,10>Data Align: <9>' & CLIP(ColzQ:Align     ) & |     !7  ColzQ:Align           !STRING(5)  
+   '<13,10><13,10>Modifiers:  <9>' & CLIP(ColzQ:Mods      ) & |     !9  ColzQ:Mods            !STRING(16) 
+          '<13,10>Xtra Q Fields:<9>' & CLIP(ColzQ:ModXFields) & |     !9  ColzQ:ModXFields      !BYTE       
+          '<13,10>Queue Number:<9>' & CLIP(ColzQ:QFieldX   ) & |     !   ColzQ:QFieldX         !SHORT      
+          '<13,10>Col Number X:   <9>' & CLIP(ColzQ:ColX      ) & |     !12 ColzQ:ColX            !SHORT      
+          '<13,10>In Group No:<9>' & CLIP(ColzQ:InGroup   ) & |     !13 ColzQ:InGroup         !SHORT      
+    '<13,10><13,10>FORMAT(): ' & CLIP(ColzQ:FmtSource    ) & |     !11 ColzQ:FmtSource          !STRING(256)
+            '<13,10>' & |
+          CLIP(Mods_Tip) & |
+          CLIP(ModXF_Tip) & |
+          '')  ,'List Column '& ColzQ:ColNo) 
+    EXIT 
+!----------------------------------------------- 
+ColumnzCls.ColumnzQ_ToClipboard    PROCEDURE() !Copy ColumnzQ to Clip
+QX      LONG,AUTO
+eTb     EQUATE('<9>')
+ColzCB  ANY
+    CODE
+    ColzCB='ColNo <9>FieldNo <9>GroupNo <9>Variable <9>Header <9>Picture <9>Width <9>Align <9>HeadAlign <9>Mods <9>xM# ' & |
+            '<9>Format Source <9>Format String <9>Format Tokens <9>ColX <9>QField <9>InGroup'
+    LOOP QX=1 TO RECORDS(ColumnzQ)
+        GET(ColumnzQ,QX)
+        ColzCB=ColzCB & LEFT('<13,10>'& |
+                CLIP(ColzQ:ColNo    ) & |
+          eTb & CHOOSE(~ColzQ:FieldNo,'',''&ColzQ:FieldNo) & |
+          eTb & CHOOSE(~ColzQ:GroupNo,'',''&ColzQ:GroupNo) & |
+          eTb & CLIP(ColzQ:Variable ) & |
+          eTb & CLIP(ColzQ:Header   ) & |
+          eTb & CLIP(ColzQ:Picture  ) & |
+          eTb & CLIP(ColzQ:Width    ) & |
+          eTb & CLIP(ColzQ:Align    ) & |
+          eTb & CLIP(ColzQ:HeadAlign) & |
+          eTb & CLIP(ColzQ:Mods     ) & |
+          eTb & CHOOSE(~ColzQ:ModXFields,'',''&ColzQ:ModXFields) & |  !BYTE Cnt
+          eTb & CLIP(ColzQ:FmtSource   ) & |
+          eTb & CLIP(ColzQ:FmtString) & |
+          eTb & CLIP(ColzQ:FmtTokn  ) & |
+          eTb & ColzQ:ColX            & |
+          eTb & CHOOSE(~ColzQ:qFieldX ,'',''&ColzQ:qFieldX)  & |
+          eTb & CHOOSE(~ColzQ:InGroup,'',''&ColzQ:InGroup) & |
+          '')
+    END        
+    SETCLIPBOARD(ColzCB)
+    RETURN      
+!-----------------------------------------------
+!EndRegion -- ColumnzCls Class
+!================================================    
+!Region -- HelpCls Class to load ModifierQ ModExtraQ. Setup Tips on some buttons
 HelpCls.Init   PROCEDURE()
 
     CODE !( _Char,  _Name,  _Prop,  _Desc) 
@@ -1373,7 +1710,9 @@ ListTipsModQRtn ROUTINE     !Find Column PropList:DefaultTip like 'PL_Xxxx' foun
        END 
        ListFEQ{PROPLIST:DefaultTip, x} = QTip & CHOOSE(~QProp,'','<13,10><13,10>'& QProp)
     END
-    EXIT   
+    EXIT
+!EndRegion -- HelpCls Class     
+
 !================================================ 
 GenFmt.SimpleGen PROCEDURE()
 ColX USHORT,AUTO

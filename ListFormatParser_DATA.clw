@@ -241,6 +241,18 @@ eOmit_NA_  EQUATE('N/A')
 !EndRegion -- Data for Generate Format
 
 !Region -- Columns View on tab using ColumnzQ and Class new 04/05/24
+ColumnzCls CLASS   !04/05/24 added new ColumnZ Queue and Tab so these methods create that Queue
+ColumnzQ_AddFromExplainAndFormat  PROCEDURE(*SHORT inColz_LastColX, *SHORT inColz_LastFldX)  !Fill in ColumnzQ fields from Format
+ColumnzQ_From_Format    PROCEDURE(STRING FmtSpec, STRING FmtTokn)  !Fill in ColumnzQ from Format
+List:ColzQ_TakeEvent    PROCEDURE() !Handle Event for LIST like Right click
+ColumnzQ_ToClipboard    PROCEDURE() !Copy ColumnzQ to Clip
+FmtParse_WidthAlign     PROCEDURE(CONST *STRING FmtSpec, CONST *STRING FmtTokn, <*STRING OutWidth>, <*STRING OutAlignLRCD>),LONG,PROC !Return End Paren of ###L(##)
+FmtParse_AlignOffset_Len PROCEDURE(CONST *STRING FmtTokn, LONG AlignPos, BOOL IsGroup=0),LONG !Returns Length of L(##) or ](##)
+FmtParse_Between        PROCEDURE(CONST *STRING FmtSpec, CONST *STRING FmtTokn,STRING LeftToken, STRING RightToken, <*LONG OutLeftPos>, <*LONG OutRightPos>),STRING,PROC
+FmtParse_NumberCnt      PROCEDURE(CONST *STRING FmtSpec, <*STRING OutNumberString>),LONG
+FmtParse_GetModifiers   PROCEDURE(STRING inFmtSpec,*STRING outModifiers, *BYTE outXFieldCnt)
+            END
+!--
 ColumnzQ QUEUE,PRE(ColzQ)
 ColNo       STRING(6)   !1  ColzQ:ColNo      <--  String ## or Grp## a STRING see ColX below a Numeric SHORT
 Level       LONG        !-     ColzQ:Level      Tree 1=Column or Group, 2=Column in Group
