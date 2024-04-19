@@ -1341,7 +1341,38 @@ QProp   STRING(128),AUTO
      '<13,10> Justify D  PROPLIST:Decimal  Decimal align (Indent) PROPLIST:DecimalOffset' &|
      '<13,10> Indent ()  PROPLIST:xOffset  Indent / Offset from Justification' &|
      '<13,10> Modifiers  PROPLIST:xxxxxxx  Characters (listed below) to modify display format'  ! Length = 509 
-   
+
+    ListFEQ = ?LIST:ColumnzQ
+    IF ListFEQ{PROP:Hlp}<>'noQtip' THEN DO ListTipsModQRtn. 
+    RETURN
+
+ListTipsModQRtn ROUTINE     !Find Column PropList:DefaultTip like 'PL_Xxxx' found in ModifierQ and set Tip to its Name
+    Loop X=1 To ListFEQ{PropList:Exists,0}
+       QTip=ListFEQ{PROPLIST:DefaultTip, x}
+       QProp=''
+       CASE QTip  
+       OF 'PL_GroupNo'    ; QProp='PROPLIST:GroupNo'  ; QTip='Group Number (if group)'
+       OF 'PL_Width'      ; QProp='PROPLIST:Width'    ; QTip='Width of Column' 
+       OF 'PL_Left'       ; QProp='PROPLIST:Left and LeftOffset'    
+                                   QTip='Data Alignment and (Offset)' 
+       OF 'PL_HeaderLeft' ; QProp='PROPLIST:HeaderLeft and HeaderLeftOffset'    ; 
+                                   QTip='Header Alignment and (Offset) <13,10>If blank same as Data Align' 
+       ELSE
+            IF      SUB(QTip,1,3)='PL_' THEN 
+                QProp = 'PROPLIST:' & SUB(QTip,4,30)  
+            ELSIF   SUB(QTip,1,9)='PROPLIST:' THEN
+                QProp = QTip 
+            ELSE
+                CYCLE 
+            END
+            MODQ:PropFull = QProp
+            GET(ModifierQ,ModQ:PropFull)
+            IF ERRORCODE() THEN CYCLE.
+            QTip=CLIP(MODQ:NAME) 
+       END 
+       ListFEQ{PROPLIST:DefaultTip, x} = QTip & CHOOSE(~QProp,'','<13,10><13,10>'& QProp)
+    END
+    EXIT   
 !================================================ 
 GenFmt.SimpleGen PROCEDURE()
 ColX USHORT,AUTO
