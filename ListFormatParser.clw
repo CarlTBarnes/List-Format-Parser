@@ -76,6 +76,7 @@ LenSizeText         PROCEDURE(STRING VariableName, *STRING StringVar),STRING  !t
 LenSizeText         PROCEDURE(STRING VariableName, *CSTRING StringVar),STRING  !to fill in LengthsText
 LenSizeText         PROCEDURE(STRING VariableName, *? StringVar, LONG StringSize),STRING  !to fill in LengthsText
 ListMakeOver        PROCEDURE(LONG ListFEQ, LONG ExtraLineHt, BOOL NoGridColor=False)   !Set LIST Grid Color and Line Height
+MessagePipeFix      PROCEDURE(STRING InMsgText),STRING   !Change Pipes in Msg that cause Line Breaks to !
 No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Clipped
 NoTabs              PROCEDURE(*STRING Txt)               !Change Tabs 09 to Space
 PopupUnder          PROCEDURE(LONG CtrlFEQ, STRING PopMenu),LONG
@@ -2615,6 +2616,19 @@ ListMakeOver PROCEDURE(LONG ListFEQ, LONG ExtraLineHt, BOOL NoGridColor=False)  
     END
     ListFEQ{PROP:NoTheme}=1  !Makes Heading Gray not White
     RETURN
+!====================================================
+MessagePipeFix PROCEDURE(STRING MsgTxt)!,STRING   !Change Pipes in Msg that cause Line Breaks to !
+L LONG,AUTO
+X LONG,AUTO
+    CODE
+    L=LEN(CLIP(MsgTxt))
+    LOOP X=1 TO L
+        CASE MsgTxt[X]
+        OF '|' ; MsgTxt[X]=CHR(166)  ! 166 = a kind of Pipe, or 161=! upside down
+        END
+    END
+    IF ~L THEN RETURN ''.
+    RETURN MsgTxt[1 : L]
 !====================================================
 No1310 PROCEDURE(STRING Txt)
 N USHORT,AUTO
