@@ -32,6 +32,7 @@
 ! 05-Apr-2024  Refactor code around Open(Window) to use new ListMakeOver(). Move most code to new PrepareWindowRtn routine
 ! 05-Apr-2024  FormatQ correct Group Numbers to be correct not a Sequence number
 ! 09-Apr-2024  Column Width could be '-1' which fails NUMERIC('-')= False so added CharNumeric(Char, Pos) 
+! 19-Apr-2024  Columnz Tab and Queue and Class ColumnzCls
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -153,11 +154,13 @@ Tabs1Line       BOOL
         OF ?QuoteFixBtn      ; DO QuoteFixTypeSetterRtn
         OF ?CopyLineFmtBtn   ; SETCLIPBOARD(Fmt:InLines)
         OF ?CopyExplainBtn   ; SETCLIPBOARD(Fmt:Explain)  
+        OF ?CopyColumnzBtn   ; ColumnzCls.ColumnzQ_ToClipboard()
         OF ?CopyLineFmtPlusExplainBtn ; SETCLIPBOARD(CLIP(Fmt:InLines) &'<13,10>' & Fmt:Explain ) 
         OF   ?ModHelp2Btn
         OROF ?ModHelp3Btn
         OROF ?ModHelp4Btn
         OROF ?ModHelp5Btn
+        OROF ?ModHelpBtn_Colz
         OROF ?ModHelpBtn     ;  IF ~ModifierHelp_ThreadOpen THEN !New IDE Help Popup conflicts with Start Window
                                     RESUME(START(ModifierHelpPopup,,0{PROP:XPos}+0{PROP:Width},0{PROP:YPos}+20,ACCEPTED()))
                                 ELSE
@@ -182,9 +185,10 @@ Tabs1Line       BOOL
             END
         OF ?CwHelpForFROM ; WndPrvCls.CwHelpOpenTopic('~From__set_listbox_data_source_.htm')
         OF ?CwHelpForList ; WndPrvCls.CwHelpListPopup(?)
-        OF ?RunAgainBtn OROF ?RunAgainGFQBtn OROF ?RunAgainFmtBtn OROF ?RunAgainFromBtn ; RUN(COMMAND('0'))
+        OF ?RunAgainBtn OROF ?RunAgainGFQBtn OROF ?RunAgainFmtBtn OROF ?RunAgainFromBtn OROF ?RunAgainBtn_Colz
+            RUN(COMMAND('0'))
         OF ?DebugTabs   ; DO TabHideSyncRtn 
-        OF ?PreviewListBtn OROF ?PreviewList2Btn OROF ?PreviewList3Btn
+        OF ?PreviewListBtn OROF ?PreviewList2Btn OROF ?PreviewList3Btn OROF ?PreviewListBtn_Colz
             IF Fmt:Format THEN 
                START(PreviewFormatWindow,,Fmt:Format,0{'Prop_Caption_Details'}) 
             ELSE
@@ -272,8 +276,8 @@ Tabs1Line       BOOL
                   
                END    
             END 
-        OF ?List:GQFieldsQ
-            GenFmt.List:GQFieldsQ_TakeEvent()
+        OF ?List:GQFieldsQ      ; GenFmt.List:GQFieldsQ_TakeEvent()
+        OF ?List:ColumnzQ       ; ColumnzCls.List:ColzQ_TakeEvent()
         END 
     END
     CLOSE(Window)
@@ -326,6 +330,7 @@ TTip CSTRING(500)
 
     TTip='Run Another Instance<13,10,13,10>'& Command('0') 
     ?RunAgainBtn{PROP:Tip}=TTip ; ?RunAgainFmtBtn{PROP:Tip}=TTip ; ?RunAgainFromBtn{PROP:Tip}=TTip ; ?RunAgainGFQBtn{PROP:Tip}=TTip
+    ?RunAgainBtn_Colz{PROP:Tip}=TTip
     
     0{PROP:Status,1}=-1 ! Remoted into Windows 11 have trouble resizing Window due to FULL lists, so hope Status bar helps
     0{PROP:Status,2}=70 ; 0{PROP:StatusText,2}='EXE RTL ' & SYSTEM{PROP:ExeVersion,2} &'.'& SYSTEM{PROP:ExeVersion,3}
@@ -914,8 +919,11 @@ ModLen4Col          USHORT              ! MaxE:ModLen4Col
 LastFmtLen          USHORT              ! MaxE:LastFmtLen
             END
 IsInGrp     STRING(1)         
+Colz_LastColX SHORT(1)     !Groups are same Column# as the 1st Column so this helps         
+Colz_LastFldX SHORT(0)     !Fields in Queue, they are adjusted for Modifier Extras
     CODE 
     FREE(ExplainQ) 
+    FREE(ColumnzQ) 
     LOOP QX=1 TO RECORDS(FormatQ)
          GET(FormatQ,QX) 
          CLEAR(ExplainQ)          
@@ -947,6 +955,7 @@ IsInGrp     STRING(1)
             SELF.AssignSLM(ExpQ:FieTxt, ExpQ:FieTxt, ExpQ:FieLen, MaxE:FieLen ) 
          END   
          ADD(ExplainQ)
+         ColumnzCls.ColumnzQ_AddFromExplainAndFormat(Colz_LastColX,Colz_LastFldX)
     END 
     IF MaxE:GrpLen THEN MaxE:GrpLen += 1.   !Leave space after, else leave zero for no Group
 
@@ -1191,7 +1200,7 @@ JunkOut  STRING(64),AUTO
     EndParenCW   =SELF.FmtParse_WidthAlign(FmtSpec, FmtTokn, ColzQ:Width, ColzQ:Align)
     DO HeaderRtn
     ColzQ:Picture=SELF.FmtParse_Between(FmtSpec, FmtTokn,'@','@') 
-    IF ColzQ:Picture THEN ColzQ:Picture='@' & ColzQ:Picture.
+    !IF ColzQ:Picture THEN ColzQ:Picture='@' & ColzQ:Picture.
     SELF.FmtParse_GetModifiers(FmtSpec,ColzQ:Mods,ColzQ:ModXFields)
     RETURN
 
@@ -1454,6 +1463,7 @@ HelpCls.Init   PROCEDURE()
     ?ModHelp3Btn{PROP:Tip}=ModifierHelp
     ?ModHelp4Btn{PROP:Tip}=ModifierHelp
     ?ModHelp5Btn{PROP:Tip}=ModifierHelp
+    ?ModHelpBtn_Colz{PROP:Tip}=ModifierHelp
 
     SELF.Add1Q('L'  ,'Align','PROPLIST:Left   ','Justification Left of Data'      ,'Left alignment of column Data. This may be offset by an (Indent).')
     SELF.Add1Q('R'  ,'Align','PROPLIST:Right  ','Justification Right of Data'    ,'Right alignment of column Data. This may be offset by an (Indent).')
@@ -1714,6 +1724,7 @@ ListTipsModQRtn ROUTINE     !Find Column PropList:DefaultTip like 'PL_Xxxx' foun
 !EndRegion -- HelpCls Class     
 
 !================================================ 
+!Region -- GenFmt Generate Format Class
 GenFmt.SimpleGen PROCEDURE()
 ColX USHORT,AUTO
 Fmt  PSTRING(256)
@@ -2730,7 +2741,7 @@ XQ LONG,AUTO
     END
     RETURN
 !----------------------------------
-
+!EndRegion -- GenFmt Generate Format Class
 
 !================================================    
 MsgLineBreak        PROCEDURE(STRING Txt)!,STRING 
@@ -2750,8 +2761,8 @@ Exp1 STRING('     LIST,AT(3,22,360,121),USE(?BrowseMeters),IMM,HVSCROLL,' &|
      '@](76)|M~Reading Dates~[4'' &|' &|
      '<13,10>           ''1R(2)|M~Current~C(0)@n_9@41R(2)|M~Prior~C(0)@n_9@39R(2)' &|
      '|M~Usage~C(0)@n-9@22C|M~M'' &|' &|
-     '<13,10>           ''eter~@s1@21C|M~Read~@s1@4C|M~Final~@s1@](224)|M~Reading' &|
-     's~''),FROM(Queue:BrowseMeters),#SEQ(1), |' &|
+     '<13,10>           ''eter~@s1@21C|M~Read~@s1@4C|M~Final~@s1@](224)|M~Readings~''),' &|
+     'FROM(Queue:BrowseMeters),#SEQ(1), |' &|
      '<13,10>           #FIELDS(CustMeter:CustIdNo,CustMeter:MeterId' &|
      'No,CustMeter:PortNo,CustMeter:BegReadingDate,CustMeter:CurReadingDate,CustM' &|
      'eter:CurReading,CustMeter:BegReading,CustMeter:Usage,Meters:MeterType,CustM' &|

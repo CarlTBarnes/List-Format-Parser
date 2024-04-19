@@ -356,6 +356,13 @@ Window WINDOW('LIST FORMAT() 411 - Parse to Fields and Explain - FROM() Parser -
                 BUTTON('&ReRun'),AT(4,290,31,18),USE(?RunAgainFromBtn),SKIP,TIP('Run Another Instance')
             END
             TAB('Columns'),USE(?TabColumns),TIP('List of Columns in the Format()')
+                BUTTON,AT(8,23,22,20),USE(?CopyColumnzBtn),SKIP,ICON(ICON:Copy),TIP('Copy Columns to' & |
+                        ' Clipboard')
+                BUTTON('Preview<0Dh,0Ah>Format()'),AT(254,23,62,20),USE(?PreviewListBtn_Colz),SKIP, |
+                        ICON(ICON:Zoom),TIP('Preview Format in a LIST on a Window'),LEFT
+                BUTTON('Modifier<0Dh,0Ah>Help'),AT(354,23,62,20),USE(?ModHelpBtn_Colz),SKIP, |
+                        ICON(ICON:Help),LEFT
+                BUTTON('&ReRun'),AT(454,23,35,20),USE(?RunAgainBtn_Colz),SKIP            
                 LIST,AT(8,49),FULL,USE(?LIST:ColumnzQ),VSCROLL,FONT(,9),HLP('x_noQtip'),FROM(ColumnzQ), |
                         FORMAT('40L(2)|FMT(B)~Column~C(0)@s6@18R(4)|FM~Fld~C(0)@n4b@15R(4)|FM~Gr' & |
                         '<0Dh,0Ah>No~C(0)@n3b@Q''PL_GroupNo''100L(2)|FM~#Field(Variable)~C(0)@s96@80' & |
