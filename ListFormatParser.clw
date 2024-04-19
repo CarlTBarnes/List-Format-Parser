@@ -31,6 +31,7 @@
 ! 15-Nov-2022  Parsed tab improved LengthsText to help size variables big enough for code (check Debug tabs to see Parsed tab) see LengthsTextRtn ROUTINE 
 ! 05-Apr-2024  Refactor code around Open(Window) to use new ListMakeOver(). Move most code to new PrepareWindowRtn routine
 ! 05-Apr-2024  FormatQ correct Group Numbers to be correct not a Sequence number
+! 09-Apr-2024  Column Width could be '-1' which fails NUMERIC('-')= False so added CharNumeric(Char, Pos) 
 !---------------------- TODO ----------  
 ![ ] Help add column for "Category or Type" (Header,Data,Flags,General,Style and Colors,Tree)
 ![ ] Generate Format() with @Pics for GQ LIST? - Copy Widths of current list - or not, all have NO Pic but that's ok
@@ -68,6 +69,7 @@ MsgLineBreak        PROCEDURE(STRING Txt),STRING
 GetExample          PROCEDURE(BYTE ExpNo, <*STRING GenQueFmtExample>),STRING
 ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos, STRING HelpBtnFEQ) 
 ChrCount            PROCEDURE(STRING Text2Scan, STRING ChrList),LONG
+CharNumeric         PROCEDURE(STRING FmtChar, LONG CharPosition=0),BOOL   !Is Char Numeric or '-' in Pos 1? - Format Width is Numeric, allow for '-1'
 InBetween           PROCEDURE(STRING FindLeft,STRING FindRight,        STRING InLiteral, <*LONG OutLeftPos>, <*LONG OutRightPos>, <*STRING OutBetweenStr>, BOOL IncludeLeftRight=0),LONG,PROC !Returns -1 Not Found or Length Between may =0
 InBetween           PROCEDURE(STRING FindLeft,STRING FindRight, CONST *STRING SearchTxt, <*LONG OutLeftPos>, <*LONG OutRightPos>, <*STRING OutBetweenStr>, BOOL IncludeLeftRight=0),LONG,PROC !Returns -1 Not Found or Length Between, may =Zero
 LenSizeText         PROCEDURE(STRING VariableName, *STRING StringVar),STRING  !to fill in LengthsText
@@ -427,7 +429,7 @@ ParseRtn ROUTINE
        IF Fmt:Format[1]=CHR(39) AND Ndx > 2 AND Fmt:Format[Ndx]=CHR(39) THEN !Is it in 'Quotes' ?
           Fmt:Format = Fmt:Format[2 : Ndx-1]
        END 
-       IF Fmt:Format[1]<>'[' AND ~NUMERIC(Fmt:Format[1]) THEN   !Valid foramt has '[' or Number 
+       IF Fmt:Format[1]<>'[' AND ~CharNUMERIC(Fmt:Format[1],1) THEN   !Valid foramt has '[' or Number 
           IF DebugMsgs THEN message('First byte not [ or #||  Fmt:Format[1]=' & Fmt:Format[1]).
           Fmt:Format=''
           EXIT
@@ -1082,8 +1084,8 @@ FormatDelim2    STRING('''~)@#')       !Note Q '' must be first to spot double
                IF InToken=1 AND Fmt[FX+1]=FormatDelim2[InToken] THEN FX += 1.  !Quotes ''   doubled
                CYCLE
             END   
-        IF NUMERIC(Fmt[FX]) THEN
-           TokFmt[FX]=CHOOSE(FX=1 OR ~NUMERIC(Fmt[FX-1]),'1','2')
+        IF CharNUMERIC(Fmt[FX],FX) THEN
+           TokFmt[FX]=CHOOSE(FX=1 OR ~CharNUMERIC(Fmt[FX-1],FX-1),'1','2')
         END       
     END 
     !IF InGroup THEN  TODO Count [ ] 
@@ -2503,6 +2505,16 @@ CntChr LONG
         IF INSTRING(Text2Scan[X],ChrList) THEN CntChr += 1.
     END
     RETURN CntChr
+!====================================================
+CharNumeric PROCEDURE(STRING FmtChar, LONG CharPosition=0)!,BOOL   !Is Char Numeric or '-' in Pos 1? - Format Width is Numeric, allow for '-1'
+IsNumber BOOL
+    CODE
+    IF CharPosition=1 AND FmtChar[1]='-' THEN
+       IsNumber=True                            !Allow '-1' to be seen as Negative
+    ELSE
+       IsNumber=NUMERIC(FmtChar[1])
+    END
+    RETURN IsNumber 
 !====================================================
 InBetween PROCEDURE(STRING FindLeft,STRING FindRight, CONST *STRING SearchTxt, <*LONG OutLeftPos>, <*LONG OutRightPos>, <*STRING OutBetweenStr>, BOOL IncludeLeftRight=0)!,LONG,PROC  !Returns -1 Not Found or Length Between, may =Zero
 LengthOut LONG,AUTO   !-1 = Not Found, 0=No Data Between
