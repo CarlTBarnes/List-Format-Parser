@@ -125,7 +125,8 @@ LenMinFreePct LONG
   RETURN
 !---------------------
 ListFormatParser    PROCEDURE()   
-    INCLUDE('ListFormatParser_DATA.clw')
+    INCLUDE('ListForm-Main_Data.clw')       !was    INCLUDE('ListFormatParser_DATA.clw')
+    INCLUDE('ListForm-Main_Wind.clw')
 DoResizePosted  BOOL
 Tabs1Line       BOOL
     CODE
