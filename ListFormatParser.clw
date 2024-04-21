@@ -82,10 +82,14 @@ No1310              PROCEDURE(STRING Text2Clean),STRING  !Remove 13,10 return Cl
 NoTabs              PROCEDURE(*STRING Txt)               !Change Tabs 09 to Space
 PopupUnder          PROCEDURE(LONG CtrlFEQ, STRING PopMenu),LONG
 Picture_N_Width     PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture ),SHORT,PROC 
-PreviewFormatWindow PROCEDURE(STRING pListFormat, STRING pCaption)
 ReplaceInto         PROCEDURE(*STRING Into, STRING FindTxt,STRING ReplaceTxt,BYTE ClipInto=0),LONG,PROC !Return Count
 UppLow              PROCEDURE(*STRING InOutText, LONG How_Up1_Lo2_UpLow3=3)  !1=Upper or 2=Lower or 3=Up[1] + Low[2:end]
 DB                  PROCEDURE(STRING DbTxt) 
+ OMIT('MODULE(')     !Prepare MAP to Split into Module
+    MODULE('ListForP-Preview.clw')
+PreviewFormatWindow PROCEDURE(STRING pListFormat, STRING pCaption)
+ OMIT('END')     !Prepare
+    END
         MODULE('Win')
 OutputDebugString   PROCEDURE(*cstring Msg),PASCAL,RAW,NAME('OutputDebugStringA'),DLL(1)
 InterlockedCompareExchange PROCEDURE(*LONG Destination, LONG ExChangeToValue, LONG CompareDestToValue),LONG,PASCAL,DLL(1)
