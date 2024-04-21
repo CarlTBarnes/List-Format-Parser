@@ -65,7 +65,9 @@ OmitWndPrv EQUATE(0)                 !Set to (1) if you do not have CBWndPreview
 WndPrvCls   CBWndPreviewClass       !At least download the LibSrc files and put in this folder
     
   MAP
-ListFormatParser    PROCEDURE() 
+ListFormatParser    PROCEDURE()
+
+    MODULE('ListForP-Utility.clw') 
 MsgLineBreak        PROCEDURE(STRING Txt),STRING
 GetExample          PROCEDURE(BYTE ExpNo, <*STRING GenQueFmtExample>),STRING
 ModifierHelpPopup   PROCEDURE(STRING XPos, STRING YPos, STRING HelpBtnFEQ) 
@@ -84,6 +86,7 @@ PopupUnder          PROCEDURE(LONG CtrlFEQ, STRING PopMenu),LONG
 Picture_N_Width     PROCEDURE(SHORT pDigitsTotal, SHORT pDecimals, BOOL pMinus, BOOL pCommas, STRING pBlankB, *STRING OutPicture ),SHORT,PROC 
 ReplaceInto         PROCEDURE(*STRING Into, STRING FindTxt,STRING ReplaceTxt,BYTE ClipInto=0),LONG,PROC !Return Count
 UppLow              PROCEDURE(*STRING InOutText, LONG How_Up1_Lo2_UpLow3=3)  !1=Upper or 2=Lower or 3=Up[1] + Low[2:end]
+    END
 
     MODULE('ListForP-PreviewList.clw')
 DB                  PROCEDURE(STRING DbTxt) 

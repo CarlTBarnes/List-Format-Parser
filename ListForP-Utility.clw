@@ -1,3 +1,6 @@
+    MEMBER('ListFormatParser')
+
+!===================================================  
 MsgLineBreak        PROCEDURE(STRING Txt)!,STRING 
 RT      ANY
 ChX     LONG,AUTO

@@ -9,7 +9,7 @@
     <OutputName>ListFormatParser</OutputName>
     <stack_size>16384</stack_size>
     <CopyCore>True</CopyCore>
-    <Model>Lib</Model>
+    <Model>Dll</Model>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>True</DebugSymbols>
@@ -31,6 +31,7 @@
   <ItemGroup>
     <Compile Include="ListFormatParser.clw" />
     <Compile Include="ListForP-PreviewList.clw" />
+    <Compile Include="ListForP-Utility.clw" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="ListFormatParser.manifest" />
