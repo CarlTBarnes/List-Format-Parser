@@ -1,3 +1,5 @@
+  MEMBER('ListFormatParser')
+  
 PreviewFormatWindow PROCEDURE(STRING pListFormat, STRING pCaption)
 Fmt:Format  STRING(4000) 
 ColumnQ QUEUE,PRE(ColQ)            !Queue feeds VLB based on Format()
