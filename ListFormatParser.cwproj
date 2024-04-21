@@ -30,6 +30,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ListFormatParser.clw" />
+    <Compile Include="ListForP-PreviewList.clw" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="ListFormatParser.manifest" />
