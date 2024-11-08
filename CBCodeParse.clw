@@ -34,9 +34,9 @@ Ndx LONG,AUTO
     LOOP Ndx=SIZE(Txt) TO 1 BY -1       !Remove trailing 13,10
          IF VAL(Txt[Ndx]) > 32 THEN     !Found the last good character > Space
             Ndx += 1                    !move to the space after
-            IF Ndx < SIZE(Txt) AND AddOne1310toEnd THEN
+            IF AddOne1310toEnd AND Ndx < SIZE(Txt) THEN
                Txt[Ndx : SIZE(Txt)]='<13,10>'
-            ELSE   
+            ELSIF Ndx <= SIZE(Txt) THEN         !11/08/24 add IF <= SIZE check else Ndx+1 can be Index Out of Range
                Txt[Ndx : SIZE(Txt)]='' 
             END
             BREAK
